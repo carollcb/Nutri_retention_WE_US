@@ -1,3 +1,6 @@
+##Author: Carol Barbosa
+#Don`t need to run that. Lot of messed stuff. I'll clean and organize it later. Already got the upstream gauges info.
+
 library(raster)
 library(rgdal)
 library(ggplot2)
