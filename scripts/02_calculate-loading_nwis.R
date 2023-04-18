@@ -6,7 +6,7 @@ stringsAsFactors = FALSE
 ) %>%
   setNames("sites")
 
-pb <- progress_bar$new(total = length(candidate_sites$site),
+pb <- progress_bar$new(total = length(candidate_sites$sites),
                        format = "calculating loading for :site_no [:bar] :percent",
                        clear = FALSE,
                        width = 80, show_after = 0)
