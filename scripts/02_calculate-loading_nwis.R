@@ -6,14 +6,15 @@ stringsAsFactors = FALSE
 ) %>%
   setNames("sites")
 
-pb <- progress_bar$new(total = length(candidate_sites),
+pb <- progress_bar$new(total = length(candidate_sites$site),
                        format = "calculating loading for :site_no [:bar] :percent",
                        clear = FALSE,
                        width = 80, show_after = 0)
 
-for(site_no in candidate_sites){
+for(site_no in candidate_sites$sites){
   pb$tick(tokens = list(site_no = site_no))
   # site_no <- "05427718"
+  # site_no <- candidate_sites$sites[1]
 
   file_out <- paste0("data/results/", site_no, "/loadflex.csv")
   if(!file.exists(file_out)){
@@ -30,7 +31,7 @@ for(site_no in candidate_sites){
     model_no <- selBestModel(
       "phosphorus_mgl",
       data = data, flow = "flow_cfs",
-      dates = "date_time", conc.units="mg/L",
+      dates = "date_time", conc.units = "mg/L",
       station = site_no, time.step = "instantaneous")$model.no
     # print(paste0('best model = ',(model_no)))
     data(Models); Models[model_no,]
@@ -56,16 +57,16 @@ for(site_no in candidate_sites){
     new_dt <- left_join(new_dt, dt, by = "date")
 
     flow_interp <- as_tsibble(new_dt, index = date) %>%
-      model(arima = ARIMA(box_cox(flow_cfs, lambda = 0))) %>%
+      fabletools::model(arima = ARIMA(box_cox(flow_cfs, lambda = 0))) %>%
       interpolate(as_tsibble(new_dt, index = date))
 
-    plot(flow_interp$date, flow_interp$flow_cfs, col = "red", type = "l")
-    lines(new_dt$date, new_dt$flow_cfs)
+    # plot(flow_interp$date, flow_interp$flow_cfs, col = "red", type = "l")
+    # lines(new_dt$date, new_dt$flow_cfs)
     min(flow_interp$flow_cfs)
 
     preds <- predictSolute(fit_reg2, newdata = flow_interp,
                            flux.or.conc =  'flux', date = TRUE, se.fit = TRUE)
-    plot(preds$date, preds$flux, type='l', main = paste0('Model ', model_no))
+    # plot(preds$date, preds$flux, type='l', main = paste0('Model ', model_no))
 
     # get annual load, flow, concentration time series
     tp_summary  <- data %>%
@@ -88,7 +89,7 @@ for(site_no in candidate_sites){
     preds_annual$RMSE    <- summarizeModel(fit)$RMSE
 
     # save preds_annual as data/results/{{site_no}}/loadflex.csv
-    dir.create(paste0("data/results/", site_no), showWarnings = FALSE)
+    dir.create(paste0("data/results/", site_no), showWarnings = FALSE, recursive = TRUE)
     write.csv(preds_annual,
               paste0("data/results/", site_no, "/loadflex.csv"),
               row.names = FALSE)
