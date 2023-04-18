@@ -21,6 +21,7 @@ library(cdlTools)
 suppressMessages(library(rdwplus))
 suppressMessages(library(tsibble))
 suppressMessages(library(fable))
+library(feasts)
 suppressMessages(library(yardstick))
 suppressMessages(library(rinvest)) # install_github("jsta/rinvest")
 library(progress)
@@ -30,6 +31,7 @@ suppressMessages(library(LAGOSUS))
 suppressMessages(library(tidyr))
 suppressMessages(library(janitor))
 library(cowplot)
+library(loadflex)
 
 # ---- helper functions ----
 
