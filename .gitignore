@@ -9,3 +9,6 @@ hydrolakes_NA.shx
 
 #Ignore shps
 /ignore_shps
+
+#Ignore LAGOS info
+/data/lagos_dataset_info.csv
