@@ -2,3 +2,10 @@
 .Rhistory
 .RData
 .Ruserdata
+hydrolakes_NA.dbf
+hydrolakes_NA.prj
+hydrolakes_NA.shp
+hydrolakes_NA.shx
+
+#Ignore shps
+/ignore_shps
