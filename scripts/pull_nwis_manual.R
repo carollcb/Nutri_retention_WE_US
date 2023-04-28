@@ -17,7 +17,7 @@ candidate_sites_WE <- readRDS("data/TN_flow_gauges.rds") %>%
 #mapview(candidate_sites_WE)
 write.csv(candidate_sites_WE, "data/candidate_sites_WE_TN.csv", as.character(TRUE))
 
-siteNumber <- "06259000" 
+siteNumber <- "10343500" 
 #Info <- readNWISsite(siteNumber)
 parameterCd <- "00060" #discharge
 parameterCd2 <- "00665" #TP: Phosphorus, water, unfiltered, milligrams per liter as phosphorus
@@ -32,14 +32,14 @@ Q_rawDailyData <- readNWISdv(
   dplyr::select(site_no,Date, X_00060_00003)%>%
   rename(date_time = Date, flow_cfs = X_00060_00003)
 
-TN_rawDailyData <- readNWISqw(
-  siteNumber, parameterCd3,
+TP_rawDailyData <- readNWISqw(
+  siteNumber, parameterCd2,
   "2000-10-01", "2015-09-30") %>%
   dplyr::select(site_no,sample_dt, result_va)%>%
-  rename(date_time = sample_dt, TN_mgl = result_va)
+  rename(date_time = sample_dt, TP_mgl = result_va)
 
-test_new <- merge(Q_rawDailyData, TN_rawDailyData, by = "date_time" )%>%
-  dplyr::select(site_no.x, date_time, flow_cfs,TN_mgl)%>%
+test_new <- merge(Q_rawDailyData, TP_rawDailyData, by = "date_time" )%>%
+  dplyr::select(site_no.x, date_time, flow_cfs,TP_mgl)%>%
   rename(site_no = site_no.x)
 
-saveRDS(test_new, "data/nwis_TN/06259000.rds")  
+saveRDS(test_new, "data/nwis_TN/10343500.rds")  

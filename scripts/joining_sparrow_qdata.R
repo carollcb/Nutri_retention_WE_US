@@ -10,14 +10,14 @@ candidate_sites_TP_TN_Lagos_lakes <- read.csv("data/candidate_sites_TP_TN_Lagos_
 candidate_sites_final <- candidate_sites_TP_TN_Lagos_lakes %>%
   dplyr::select(station_id, flow_station_id)
 
-wq_sparrow_TP <- read.csv("data/wq_tp.txt",
+wq_sparrow_TP <- read.csv("C:/Users/cbarbosa/Documents/wq_tp.txt",
                                                             colClasses = "character",
                                                             stringsAsFactors = FALSE
 ) %>% mutate(date = as.Date(date, "%m/%d/%Y")) %>%
   rename(date_time = date)
 
 
-wq_sparrow_TN <- read.csv("data/wq_tn.txt",
+wq_sparrow_TN <- read.csv("C:/Users/cbarbosa/Documents//wq_tn.txt",
                           colClasses = "character",
                           stringsAsFactors = FALSE
 ) %>% mutate(date = as.Date(date, "%m/%d/%Y")) %>%
@@ -34,8 +34,8 @@ head(candidate_sites_final)
 parameterCd <- "00060" #discharge
 #parameterCd2 <- "00665" #TP: Phosphorus, water, unfiltered, milligrams per liter as phosphorus
 #parameterCd3 <- "00600" #Total nitrogen [nitrate + nitrite + ammonia + organic-N], water, unfiltered, milligrams per liter
-siteNumber <- "09046600" 
-sparrow_id <- "MS1312907"
+siteNumber <- "06828500" 
+sparrow_id <- "neSRE3REPUB407"
 
 TP_sparrow<- wq_sparrow_TP %>%
   filter(station_id == sparrow_id)%>%
@@ -54,5 +54,5 @@ test_new <- merge(Q_rawDailyData, TP_sparrow, by = "date_time" )%>%
   dplyr::select(station_id.x, site_no, date_time, flow_cfs,phosphorus_mgl)%>%
   rename(station_id = station_id.x)
 
-saveRDS(test_new, "data/nwis/MS1312907.rds") 
+saveRDS(test_new, "data/nwis/neSRE3REPUB407.rds") 
 

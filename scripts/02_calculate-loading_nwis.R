@@ -1,10 +1,14 @@
 source("scripts/99_utils.R")
 
-candidate_sites <- read.csv("data/candidate_sites_WE.csv",
-colClasses = "character",
-stringsAsFactors = FALSE
-) %>%
-  setNames("sites")
+candidate_sites <- candidate_sites_final %>%
+  rename(sites = station_id) 
+
+write.csv(candidate_sites, "upstream_gauges_final.csv")
+
+candidate_sites <- read.csv("upstream_gauges_final.csv",
+                            colClasses = "character",
+                            stringsAsFactors = FALSE
+                            )
 
 pb <- progress_bar$new(total = length(candidate_sites$sites),
                        format = "calculating loading for :site_no [:bar] :percent",
