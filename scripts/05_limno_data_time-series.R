@@ -3,6 +3,8 @@
 #Loading packages
 library(dplyr)
 library(lubridate)
+library(sf)
+library(mapview)
 
 #Data sources
 #source("scripts/04_compile_LAGOS-limno-reservoir-connectivity-data.R")
@@ -10,7 +12,8 @@ library(lubridate)
 #  select(lagoslakeid, year,temp_degc_median, tn_ugl_median, 
 #         tp_ugl_median, lake_elevation_m, lake_centroidstate, epanutr_zoneid)
 
-limno_nutri<-read.csv("C:/Users/carol/OneDrive/Documentos/LIMNO_v2.1/site_nutrientsalgae_epi.csv")
+#limno_nutri<-read.csv("C:/Users/carol/OneDrive/Documentos/LIMNO_v2.1/site_nutrientsalgae_epi.csv")
+limno_nutri<-read.csv("C:/westernLimno/LIMNO_v2.1/site_nutrientsalgae_epi.csv")
 
 limno_tp_tn <- limno_nutri %>%
   mutate(event_date=lubridate::ymd(event_date),
@@ -30,11 +33,17 @@ year=factor(year))%>%
 
 limno_tp_tn_2000 <- limno_tp_tn_yrs %>%
   mutate(year=as.numeric(as.character(year))) %>%
-  filter(year>=1999)
+  filter(year>=2000)
 
 candidate_sites <- read.csv("data/candidate_sites_TP_TN_Lagos_lakes.csv",
                             colClasses = "character",
                             stringsAsFactors = FALSE) 
 
-upstream_gauges_lakes_all <- inner_join(limno_tp_tn_2000, candidate_sites, by="lagoslakeid")
+upstream_gauges_lakes_all <- inner_join(limno_tp_tn_2000, candidate_sites, by="lagoslakeid") #%>%
+  #distinct(station_id)
+ # st_as_sf(coords= c("lon", "lat"),
+       #    crs=4326)
 
+#mapview(upstream_gauges_lakes_all)
+
+##Merge with Wu dataset and see what lakes will overlap??
