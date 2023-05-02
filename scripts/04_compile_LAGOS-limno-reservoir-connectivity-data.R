@@ -1,4 +1,4 @@
-
+library(data.table)
 # EDI ---------------------------------------------------------------------
 
 
@@ -698,60 +698,23 @@ summary(as.factor(dt4$nla2007_siteid))
 summary(as.factor(dt4$nla2012_siteid))
 
 
-
-
 # in situ -----------------------------------------------------------------
 
-
-chemicalphysical<-read.csv("LIMNO_v2.1/site_chemicalphysical_epi.csv") %>%
-  mutate(event_date=lubridate::ymd(event_date),
-         year=lubridate::year(event_date),
-         year=factor(year),
-         lagoslakeid=factor(lagoslakeid))
-#Quick check to see if I'm using data from the correct folder... 
-# chemicalphysical2<-read.csv("~/Dropbox/dropbox Research/Modelscape/modelscape/data/CL_LAGOSUS_exports/LAGOSUS_LIMNO/US/LIMNO_v2.1/Final_exports/site_chemicalphysical_epi.csv") %>%
-#   mutate(event_date=lubridate::ymd(event_date),
-#          year=lubridate::year(event_date),
-#          year=factor(year),
-#          lagoslakeid=factor(lagoslakeid))
-# 
-# dplyr::all_equal(chemicalphysical,chemicalphysical2)
-##TRUE
-
-#claritycarbon<-read.csv("LIMNO_v2.1/site_claritycarbon_epi.csv")%>%
-#  mutate(event_date=lubridate::ymd(event_date),
- #        year=lubridate::year(event_date),
- #        year=factor(year),
-  #       lagoslakeid=factor(lagoslakeid))
-#contaminants<-read.csv("LIMNO_v2.1/site_contaminants_epi.csv")%>%
-#  mutate(event_date=lubridate::ymd(event_date),
-#         year=lubridate::year(event_date),
- #        year=factor(year),
-  #       lagoslakeid=factor(lagoslakeid))
-
-nutrientsalgae<-read.csv("LIMNO_v2.1/site_nutrientsalgae_epi.csv")%>%
+chemicalphysical<-read.csv("C:/Users/carol/OneDrive/Documentos/LIMNO_v2.1/site_chemicalphysical_epi.csv") %>%
   mutate(event_date=lubridate::ymd(event_date),
          year=lubridate::year(event_date),
          year=factor(year),
          lagoslakeid=factor(lagoslakeid))
 
-depth<-read.csv("LIMNO_v2.1/lake_depth.csv") %>%
+nutrientsalgae<-read.csv("C:/Users/carol/OneDrive/Documentos/LIMNO_v2.1/site_nutrientsalgae_epi.csv")%>%
+  mutate(event_date=lubridate::ymd(event_date),
+         year=lubridate::year(event_date),
+         year=factor(year),
+         lagoslakeid=factor(lagoslakeid))
+
+depth<-read.csv("C:/Users/carol/OneDrive/Documentos/LIMNO_v2.1/lake_depth.csv") %>%
   mutate(lagoslakeid=factor(lagoslakeid))
 
-
-##Now that LAGOS-US is getting published on EDI, we can forget about these old files
-# lakeinformation<-read.csv(here("data/CL_LAGOSUS_exports/LAGOSUS_LOCUS/LOCUS_v1.0/lake_information.csv")) %>%
-#   filter(lake_centroidstate %in% c("CA", "UT", "NV",
-#                       "WA", "OR", "ID",
-#                       "MT", "WY", "CO",
-#                       "NM", "AZ")) %>%
-#   mutate(lagoslakeid=factor(lagoslakeid))
-# 
-# lakewatersheds<-read.csv(here("data/CL_LAGOSUS_exports/LAGOSUS_LOCUS/LOCUS_v1.0/lake_watersheds.csv")) %>%
-#   mutate(lagoslakeid=factor(lagoslakeid))
-# 
-# lakecharacteristics<-read.csv(here("data/CL_LAGOSUS_exports/LAGOSUS_LOCUS/LOCUS_v1.0/lake_characteristics.csv")) %>%
-#   mutate(lagoslakeid=factor(lagoslakeid))
 
 lakeinformation <- lakeinformation %>%
   filter(lake_centroidstate %in% c("CA", "UT", "NV",
@@ -778,22 +741,6 @@ chemicalphysical <- chemicalphysical %>%
                  "so4_mgl","temp_degc","salinity_mgl"), list(median = function(x) median(x,na.rm=T),
                                                max = function(x) max(x,na.rm=T),
                                                n=length))
-# names(claritycarbon)
-#claritycarbon <- claritycarbon %>%
-#  group_by(lagoslakeid, year) %>%
- # summarize_at(c("colora_pcu","colort_pcu","doc_mgl","turb_ntu",
- #                "secchi_m","tss"), list(median = function(x) median(x,na.rm=T),
-  #                                       max = function(x) max(x,na.rm=T),
-    #                                     n=length))
-
-# names(contaminants)
-#contaminants <- contaminants %>%
-#  group_by(lagoslakeid, year) %>%
-#  summarize_at(c("al_tot_ugl","al_diss_ugl","as_diss_ugl",
- #                "atz_tot_ugl","ecoli_cfu100ml","mehg_tot_ngl",
-  #               "se_diss_ugl","ecoli_mpn100ml"), list(median = function(x) median(x,na.rm=T),
-   #                                                    max = function(x) max(x,na.rm=T),
-    #                                                   n=length))
 
 # names(nutrientsalgae)
 nutrientsalgae <- nutrientsalgae %>%
@@ -806,8 +753,6 @@ nutrientsalgae <- nutrientsalgae %>%
 
 #Joining each data.table to lakeinformation which only has western states
 chemicalphysical<-merge(lakeinformation,chemicalphysical, no.dups=TRUE, by="lagoslakeid") 
-#claritycarbon<-merge(lakeinformation,claritycarbon, no.dups=TRUE, by="lagoslakeid")
-#contaminants<-merge(lakeinformation,contaminants, no.dups=TRUE, by="lagoslakeid")
 nutrientsalgae<-merge(lakeinformation,nutrientsalgae,  no.dups=TRUE, by="lagoslakeid")
 colnames<-(intersect( colnames(lakeinformation),  colnames(depth))) #identify common columns between data.tables
 depth<-merge(lakeinformation,depth, all.x=TRUE,  no.dups=TRUE, by=colnames)
@@ -820,10 +765,7 @@ lakecharacteristics<-merge(lakeinformation,lakecharacteristics,  no.dups=TRUE, b
 #Make one big dataframe, and join by all of the common columns ("colnames")
 colnames<-(intersect( colnames(chemicalphysical),  colnames(nutrientsalgae)))
 dt_limno<- merge(chemicalphysical,nutrientsalgae, all=TRUE,by=colnames) 
-#colnames<-(intersect( colnames(dt_limno),  colnames(contaminants)))
-#dt_limno<- merge(dt_limno,contaminants, all=TRUE,by=colnames) 
-#colnames<-(intersect( colnames(dt_limno),  colnames(nutrientsalgae)))
-#dt_limno<- merge(dt_limno,nutrientsalgae, all=TRUE,by=colnames) 
+
 colnames<-(intersect( colnames(dt_limno),  colnames(depth)))
 dt_limno<- merge(dt_limno,depth,by=colnames) 
 
@@ -832,7 +774,6 @@ dt_limno<- merge(dt_limno,lakewatersheds,all=TRUE,by=colnames)
 
 colnames<-(intersect( colnames(dt_limno), colnames(lakecharacteristics)))
 dt_limno<- merge(dt_limno,lakecharacteristics,all=TRUE,by=colnames) 
-
 
 dt_limno_ids <-  length(unique(dt_limno$lagoslakeid))
 
@@ -981,130 +922,6 @@ colnames<-(intersect( colnames(dt1_western),  colnames(dt_limno))) #Find common 
 dt1_western<-left_join(dt1_western,dt_limno, by=colnames)
 sum(is.na(dt_limno$year))
 sum(is.na(dt1_western$year))
-
-
-
-# 
-# infile2 <- trimws("https://pasta.lternet.edu/package/data/eml/edi/879/1/7ec02af96e1ef066455cf41caebf59d2") 
-# infile2 <-sub("^https","http",infile2)
-# # This creates a tibble named: dt2
-# 	dt2 <-read_delim(infile2
-#                 ,delim=","
-#                 ,skip=1
-#                     ,quote='"'
-#                     , col_names=c(
-#                         "lagoslakeid",
-#                         "to_lagoslakeid",
-#                         "streamlength_down_km"   ),
-#                     col_types=list(
-#                         col_number() ,
-#                         col_number() ,
-#                         col_number() ),
-#                         na=c(" ",".","NA")  )
-# 
-# 
-# # Convert Missing Values to NA for individual vectors
-# dt2$lagoslakeid <- ifelse((trimws(as.character(dt2$lagoslakeid))==trimws("NA")),NA,dt2$lagoslakeid)
-# suppressWarnings(dt2$lagoslakeid <- ifelse(!is.na(as.numeric("NA")) & (trimws(as.character(dt2$lagoslakeid))==as.character(as.numeric("NA"))),NA,dt2$lagoslakeid))
-# dt2$to_lagoslakeid <- ifelse((trimws(as.character(dt2$to_lagoslakeid))==trimws("NA")),NA,dt2$to_lagoslakeid)
-# suppressWarnings(dt2$to_lagoslakeid <- ifelse(!is.na(as.numeric("NA")) & (trimws(as.character(dt2$to_lagoslakeid))==as.character(as.numeric("NA"))),NA,dt2$to_lagoslakeid))
-# dt2$streamlength_down_km <- ifelse((trimws(as.character(dt2$streamlength_down_km))==trimws("NA")),NA,dt2$streamlength_down_km)
-# suppressWarnings(dt2$streamlength_down_km <- ifelse(!is.na(as.numeric("NA")) & (trimws(as.character(dt2$streamlength_down_km))==as.character(as.numeric("NA"))),NA,dt2$streamlength_down_km))
-# 
-# 
-# # Observed issues when reading the data. An empty list is good!
-# problems(dt2)
-# # Here is the structure of the input data tibble:
-# glimpse(dt2)
-# # And some statistical summaries of the data
-# summary(dt2)
-# # Get more details on character variables
-# #                      
-# infile3 <- trimws("https://pasta.lternet.edu/package/data/eml/edi/879/1/20d37c3f72ffb78945f1d85b4806f975")
-# infile3 <-sub("^https","http",infile3)
-# # This creates a tibble named: dt3
-# 	dt3 <-read_delim(infile3
-#                 ,delim=","
-#                 ,skip=1
-#                     ,quote='"'
-#                     , col_names=c(
-#                         "V1",
-#                         "lagoslakeid",
-#                         "to_lagoslakeid",
-#                         "streamlength_total_km",
-#                         "streamlength_up_km",
-#                         "streamlength_down_km"   ),
-#                     col_types=list(
-#                         col_number() ,
-#                         col_number() ,
-#                         col_number() ,
-#                         col_number() ,
-#                         col_number() ,
-#                         col_number() ),
-#                         na=c(" ",".","NA")  )
-# 
-# 
-# # Convert Missing Values to NA for individual vectors
-# dt3$V1 <- ifelse((trimws(as.character(dt3$V1))==trimws("NA")),NA,dt3$V1)
-# suppressWarnings(dt3$V1 <- ifelse(!is.na(as.numeric("NA")) & (trimws(as.character(dt3$V1))==as.character(as.numeric("NA"))),NA,dt3$V1))
-# dt3$lagoslakeid <- ifelse((trimws(as.character(dt3$lagoslakeid))==trimws("NA")),NA,dt3$lagoslakeid)
-# suppressWarnings(dt3$lagoslakeid <- ifelse(!is.na(as.numeric("NA")) & (trimws(as.character(dt3$lagoslakeid))==as.character(as.numeric("NA"))),NA,dt3$lagoslakeid))
-# dt3$to_lagoslakeid <- ifelse((trimws(as.character(dt3$to_lagoslakeid))==trimws("NA")),NA,dt3$to_lagoslakeid)
-# suppressWarnings(dt3$to_lagoslakeid <- ifelse(!is.na(as.numeric("NA")) & (trimws(as.character(dt3$to_lagoslakeid))==as.character(as.numeric("NA"))),NA,dt3$to_lagoslakeid))
-# dt3$streamlength_total_km <- ifelse((trimws(as.character(dt3$streamlength_total_km))==trimws("NA")),NA,dt3$streamlength_total_km)
-# suppressWarnings(dt3$streamlength_total_km <- ifelse(!is.na(as.numeric("NA")) & (trimws(as.character(dt3$streamlength_total_km))==as.character(as.numeric("NA"))),NA,dt3$streamlength_total_km))
-# dt3$streamlength_up_km <- ifelse((trimws(as.character(dt3$streamlength_up_km))==trimws("NA")),NA,dt3$streamlength_up_km)
-# suppressWarnings(dt3$streamlength_up_km <- ifelse(!is.na(as.numeric("NA")) & (trimws(as.character(dt3$streamlength_up_km))==as.character(as.numeric("NA"))),NA,dt3$streamlength_up_km))
-# dt3$streamlength_down_km <- ifelse((trimws(as.character(dt3$streamlength_down_km))==trimws("NA")),NA,dt3$streamlength_down_km)
-# suppressWarnings(dt3$streamlength_down_km <- ifelse(!is.na(as.numeric("NA")) & (trimws(as.character(dt3$streamlength_down_km))==as.character(as.numeric("NA"))),NA,dt3$streamlength_down_km))
-# 
-# 
-# # Observed issues when reading the data. An empty list is good!
-# problems(dt3)
-# # Here is the structure of the input data tibble:
-# glimpse(dt3)
-# # And some statistical summaries of the data
-# summary(dt3)
-# # Get more details on character variables
-# 
-# infile4 <- trimws("https://pasta.lternet.edu/package/data/eml/edi/879/1/d9cf897fd7461d565a9c506575262fc4")
-# infile4 <-sub("^https","http",infile4)
-# # This creates a tibble named: dt4
-# 	dt4 <-read_delim(infile4
-#                 ,delim=","
-#                 ,skip=1
-#                     ,quote='"'
-#                     , col_names=c(
-#                         "from_comid",
-#                         "to_comid",
-#                         "from_lagoslakeid",
-#                         "to_lagoslakeid"   ),
-#                     col_types=list(
-#                         col_character(),
-#                         col_character(),
-#                         col_number() ,
-#                         col_number() ),
-#                         na=c(" ",".","NA")  )
-# 
-# 
-# # Convert Missing Values to NA for individual vectors
-# dt4$from_lagoslakeid <- ifelse((trimws(as.character(dt4$from_lagoslakeid))==trimws("NA")),NA,dt4$from_lagoslakeid)
-# suppressWarnings(dt4$from_lagoslakeid <- ifelse(!is.na(as.numeric("NA")) & (trimws(as.character(dt4$from_lagoslakeid))==as.character(as.numeric("NA"))),NA,dt4$from_lagoslakeid))
-# dt4$to_lagoslakeid <- ifelse((trimws(as.character(dt4$to_lagoslakeid))==trimws("NA")),NA,dt4$to_lagoslakeid)
-# suppressWarnings(dt4$to_lagoslakeid <- ifelse(!is.na(as.numeric("NA")) & (trimws(as.character(dt4$to_lagoslakeid))==as.character(as.numeric("NA"))),NA,dt4$to_lagoslakeid))
-# 
-# 
-# # Observed issues when reading the data. An empty list is good!
-# problems(dt4)
-# # Here is the structure of the input data tibble:
-# glimpse(dt4)
-# # And some statistical summaries of the data
-# summary(dt4)
-# # Get more details on character variables
-# 
-# summary(as.factor(dt4$from_comid))
-# summary(as.factor(dt4$to_comid))
-
 
 # Add reservoir data ------------------------------------------------------
 
@@ -1267,10 +1084,6 @@ colnames<-(intersect( colnames(dt1_western), colnames(reservoir)))
 dt1_western<- left_join(dt1_western,reservoir,by=colnames) 
 
 
-# Add LakeCat data ------------------------------------------------------
-
-## I removed from this version
-
 # summarize spatial DF ----------------------------------------------------
 
 
@@ -1297,20 +1110,6 @@ dt1_western_summary <- dt1_western_summary %>%
                                             "2000s","2010s"," > 2020"))) #Reorder factors for plotting
 
 
-#We lost some variables in the summary, so adding them back in here
-# colnames<-(intersect( colnames(dt1_western_summary),  colnames(lakewatersheds))) #identify common columns between data.tables
-# dt1_western_summary<-merge(dt1_western_summary,lakewatersheds,  no.dups=TRUE, by=colnames)
-# colnames<-(intersect( colnames(dt1_western_summary),  colnames(dt1))) #identify common columns between data.tables
-# dt1_western_summary<-merge(dt1_western_summary,dt1,  no.dups=TRUE, by=colnames)
-# colnames<-(intersect( colnames(dt1_western_summary),  colnames(depth))) #identify common columns between data.tables
-# dt1_western_summary<-merge(dt1_western_summary,depth,  no.dups=TRUE, by=colnames)
-# colnames<-(intersect( colnames(dt1_western_summary),  colnames(reservoir))) #identify common columns between data.tables
-# dt1_western_summary<-merge(dt1_western_summary,reservoir,  no.dups=TRUE, by=colnames)
-# colnames<-(intersect( colnames(dt1_western_summary),  colnames(NADP))) #identify common columns between data.tables
-# dt1_western_summary<-merge(dt1_western_summary,NADP,  no.dups=TRUE, by=colnames)
-# colnames<-(intersect( colnames(dt1_western_summary),  colnames(NLCD))) #identify common columns between data.tables
-# dt1_western_summary<-merge(dt1_western_summary,NLCD,  no.dups=TRUE, by=colnames)
-
 #Using merge, we end up losing a lot of observations starting with "reservoir"
 colnames<-(intersect( colnames(dt1_western_summary),  colnames(lakewatersheds))) #identify common columns between data.tables
 dt1_western_summary<-left_join(dt1_western_summary,lakewatersheds, by=colnames)
@@ -1328,7 +1127,7 @@ dt1_western_summary<-left_join(dt1_western_summary,lakecharacteristics,  by=coln
 dt1_western_summary$year
 
 
-#IAO Sept 28 2021 -- since we are going to focus on TP and TN, filter out NAs now
+#since we are going to focus on TP and TN, filter out NAs now
  dt1_western_summary<-dt1_western_summary%>%
    filter(!(is.na(tp_ugl_median) &
             is.na(tn_ugl_median))) 
@@ -1347,7 +1146,7 @@ dt1_western_summary<- dt1_western_summary %>%
                                                    "epanutr_8","epanutr_9"),
                                  labels=c("N. Plains","S. Plains","Western Mtns","Xeric"))) 
               
-#write.csv(dt1_western_summary, "limno_summary.csv")
+#write.csv(dt1_western_summary, "data/limno_summary.csv")
 
 # summarize spatial df (2000-present) -------------------------------------
 
@@ -1364,15 +1163,12 @@ dt1_western_summary_2000s<-dt1_western_yearasNUM2000[, lapply(.SD, median, na.rm
 #We lost some variables in the summary, so adding them back in here
 colnames<-(intersect( colnames(dt1_western_summary_2000s),  colnames(lakewatersheds))) #identify common columns between data.tables
 dt1_western_summary_2000s<-merge(dt1_western_summary_2000s,lakewatersheds,  no.dups=TRUE, by=colnames)
-colnames<-(intersect( colnames(dt1_western_summary_2000s),  colnames(dt1))) #identify common columns between data.tables
-dt1_western_summary_2000s<-merge(dt1_western_summary_2000s,dt1,  no.dups=TRUE, by=colnames)
+#colnames<-(intersect( colnames(dt1_western_summary_2000s),  colnames(dt1))) #identify common columns between data.tables
+#dt1_western_summary_2000s<-merge(dt1_western_summary_2000s,dt1,  no.dups=TRUE, by=colnames)
 colnames<-(intersect( colnames(dt1_western_summary_2000s),  colnames(depth))) #identify common columns between data.tables
 dt1_western_summary_2000s<-merge(dt1_western_summary_2000s,depth,  no.dups=TRUE, by=colnames)
 colnames<-(intersect( colnames(dt1_western_summary_2000s),  colnames(reservoir))) #identify common columns between data.tables
 dt1_western_summary_2000s<-merge(dt1_western_summary_2000s,reservoir,  no.dups=TRUE, by=colnames)
-
-
-
 
 
 lakecharacteristics_trim <- lakecharacteristics %>%
@@ -1383,4 +1179,4 @@ lakecharacteristics_trim <- lakecharacteristics %>%
                 lake_glaciatedlatewisc)
 dt1_western_summary_2000s<-merge(dt1_western_summary_2000s,lakecharacteristics_trim,  no.dups=TRUE, by="lagoslakeid")
 
-#write.csv(dt1_western_summary_2000s, "limno_summary_2000s.csv")
+#write.csv(dt1_western_summary_2000s, "data/limno_summary_2000s.csv")
