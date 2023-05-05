@@ -1,5 +1,6 @@
 ###Plottings to check nutrient retention estimation
 library(sf)
+library(tidyverse)
 
 
 ##Nitrogen
@@ -26,18 +27,30 @@ upstream_sites_lagos <- read.csv("data/candidate_sites_TP_TN_Lagos_lakes.csv",
                                               stringsAsFactors = FALSE
 ) 
 
-#Filter hydrolakes to North America and get only res time data
-hydrolakes <- st_read("D:/Datasets/Datasets/HydroLAKES_polys_v10_shp/HydroLAKES_polys_v10.shp") %>% 
+#I merged hydrolakes and LAGOS in QGis - not sure if it worked well. Maybe repeat this step!
+hydrolakes_lagos <- st_read("shps/hydrolakes_lagos_merged.shp") %>% 
+  rename(lagoslakeid = lagoslakei)%>%
+  mutate(lagoslakeid = as.character(lagoslakeid))
 
-hydrolakes_NA <- hydrolakes %>%  
-  filter(Country == "United States of America")%>%
-  dplyr::select(Lake_name, Res_time, Pour_long, Pour_lat)%>%
-  rename(lake_namelagos = Lake_name)%>%
-  st_as_sf(coords= c("Pour_long", "Pour_lat"),
-           crs=4326)
 
-st_write(hydrolakes_NA, "shps/hydrolakes_US.shp")
+#hydrolakes_NA <- hydrolakes %>%  
+#  filter(Country == "United States of America")%>%
+#  dplyr::select(Lake_name, Res_time, Pour_long, Pour_lat)%>%
+#  rename(lake_namelagos = Lake_name)%>%
+#  st_as_sf(coords= c("Pour_long", "Pour_lat"),
+#           crs=4326)
+#st_write(hydrolakes_NA, "shps/hydrolakes_US.shp")
 
-#hydrolakes_upstream_sites <- inner_join(upstream_sites_lagos, hydrolakes_NA, by="lake_namelagos")
+hydrolakes_upstream_sites <- inner_join(upstream_sites_lagos, hydrolakes_lagos, by="lagoslakeid")
+
+upstream_conc_hydro <- inner_join(hydrolakes_upstream_sites, phosphorus_conc_files, by="station_id")%>%
+  group_by(station_id, Res_tim)%>%
+  select(station_id, Res_tim, phosphorus_mgl)
+
+##agregar conc em anos antes de plotar!!
+
+ggplot(upstream_conc_hydro, aes(x=phosphorus_mgl, y=Res_tim)) +
+  geom_point(size=2, shape=23)+
+  geom_smooth(method=lm)
 
 #lagos_res_upst <- inner_join(upstream_sites_lagos, Wu_Lagos_lakes_hydro_sp, by="lagoslakeid")
