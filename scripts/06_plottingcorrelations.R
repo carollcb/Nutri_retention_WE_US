@@ -3,15 +3,52 @@ library(sf)
 library(tidyverse)
 library(lubridate)
 library(mapview)
+library(tibble)
 
 ##Nitrogen
-#Plotting N retention (y axis, gm2y-1 based on the eq above) x N loading (x axis, gm2y-1)
+#Plotting log(N retention/water discharge (y axis, gm2y-1/m3s-1) x Load( N loading/water discharge (x axis, gm2y-1/m3s-1)
 #result => r2=1
 
+#Using reduced sample so far
 nitrogen_loads <- list.files(path= "data/results_TN/",pattern = ".csv", full.names = T)%>%
   map(read.csv) %>% 
   data.table::rbindlist()
- 
+
+write.csv(nitrogen_loads, "data/TN_loads_test.csv")
+
+TN_loads <- read.csv("data/TN_loads_test.csv")%>%
+  mutate(flow_station_id = as.character(flow_station_id)) #,
+                     # colClasses = c("station_id" = "character", "flow_station_id" = "character")))
+
+
+  
+
+upstream_sites_lagos <- read.csv("data/candidate_sites_TP_TN_Lagos_lakes.csv",
+                                 colClasses = "character",
+                                 stringsAsFactors = FALSE
+) 
+
+hydrolakes_lagos <- st_read("shps/joined_hydrolakes_lagos.shp") %>% 
+  rename(lagoslakeid = lagoslakei)%>%
+  mutate(lagoslakeid = as.character(lagoslakeid))
+
+
+hydrolakes_upstream_sites <- inner_join(upstream_sites_lagos, hydrolakes_lagos, by="lagoslakeid")
+
+
+upstream_Nconc_hydro <- inner_join(hydrolakes_upstream_sites, TN_loads, by="flow_station_id")%>%
+  mutate(flux_gyr = flux_kgy/1000)%>%
+  group_by(flow_station_id, Dis_avg)%>%
+  select(flow_station_id, Dis_avg, flux_gyr)
+
+#R =((10^(1.00*(log(x/water discharge))- 0:39))/(water discharge))
+upstream_Nconc_hydro <- upstream_Nconc_hydro %>%
+  #na.omit() %>%
+  mutate(Nret = ((10^(1.00*(log(flux_gyr/Dis_avg))- 0.39))/(Dis_avg)))
+
+ggplot(upstream_Nconc_hydro, aes(x=(log(flux_gyr/Dis_avg)), y=(log(Nret/Dis_avg)))) +
+  geom_point(size=2, shape=23)+
+  geom_smooth(method=lm)
 
 ##Phosphorus
 #Plotting residence time (yr, y axis) x inflow P conc (x axis, µg l−1)
@@ -29,11 +66,6 @@ phosphorus_conc_yrs <- group_by(phosphorus_conc_files,
   dplyr::summarize(annual_median_TP = mean(phosphorus_mgl))%>%
   rename(flow_station_id = site_no)
 
-
-upstream_sites_lagos <- read.csv("data/candidate_sites_TP_TN_Lagos_lakes.csv",
-                                              colClasses = "character",
-                                              stringsAsFactors = FALSE
-) 
 
 #I merged hydrolakes and LAGOS in QGis - not sure if it worked well. Maybe repeat this step!
 hydrolakes_lagos <- st_read("shps/hydrolakes_lagos_merged.shp") %>% 
