@@ -19,7 +19,8 @@ nitrogen_loads <- list.files(path= "data/results_TN/",pattern = ".csv", full.nam
 phosphorus_conc_files <- list.files(path= "data/nwis/",pattern = ".rds", full.names = T)%>%
   map(readRDS) %>% 
     data.table::rbindlist(fill=TRUE)%>%
-   mutate(phosphorus_mgl = as.numeric(phosphorus_mgl))
+   mutate(phosphorus_mgl = as.numeric(phosphorus_mgl))%>%
+  rename(flow_station_id = site_no)
 
 phosphorus_conc_files$year <- year(phosphorus_conc_files$date_time)
 
@@ -29,9 +30,6 @@ phosphorus_conc_yrs <- group_by(phosphorus_conc_files,
   rename(flow_station_id = site_no)
 
 
-#dplyr::select(site_no,  date_time, flow_cfs, TN_mgl)%>%
-#  mutate(TN_mgl = as.numeric(TN_mgl))
-
 upstream_sites_lagos <- read.csv("data/candidate_sites_TP_TN_Lagos_lakes.csv",
                                               colClasses = "character",
                                               stringsAsFactors = FALSE
@@ -40,20 +38,31 @@ upstream_sites_lagos <- read.csv("data/candidate_sites_TP_TN_Lagos_lakes.csv",
 #I merged hydrolakes and LAGOS in QGis - not sure if it worked well. Maybe repeat this step!
 hydrolakes_lagos <- st_read("shps/hydrolakes_lagos_merged.shp") %>% 
   rename(lagoslakeid = lagoslakei)%>%
-  mutate(lagoslakeid = as.character(lagoslakeid))
+  mutate(lagoslakeid = as.character(lagoslakeid))%>%
+  mutate(res_time_yr = Res_tim/365)
 
 
 hydrolakes_upstream_sites <- inner_join(upstream_sites_lagos, hydrolakes_lagos, by="lagoslakeid")
 
-upstream_conc_hydro <- inner_join(hydrolakes_upstream_sites, phosphorus_conc_yrs, by="flow_station_id")%>%
-  group_by(flow_station_id, Res_tim)%>%
-  select(flow_station_id, Res_tim, annual_median_TP)
 
-ggplot(upstream_conc_hydro, aes(x=annual_median_TP, y=Res_tim)) +
+upstream_conc_hydro <- inner_join(hydrolakes_upstream_sites, phosphorus_conc_yrs, by="flow_station_id")%>%
+  mutate(ann_median_TP_ugl = annual_median_TP*1000)%>%
+   group_by(flow_station_id, res_time_yr)%>%
+  select(flow_station_id, res_time_yr, ann_median_TP_ugl)
+
+upstream_conc_hydro <- upstream_conc_hydro %>%
+  mutate(Pret_coef = ((1-(1.43/ann_median_TP_ugl))*((ann_median_TP_ugl)/(1 + (res_time_yr^0.5)))^0.88))
+#Hejzlar says this number is something between 0.02 and 0.96 -> check that!
+
+ggplot(upstream_conc_hydro, aes(x=ann_median_TP_ugl, y=res_time_yr)) +
   geom_point(size=2, shape=23)+
   geom_smooth(method=lm)
 
-##Looking at res_time x discharge
+ggplot(upstream_conc_hydro, aes(x=Pret_coef, y=res_time_yr)) +
+  geom_point(size=2, shape=23)+
+  geom_smooth(method=lm)
+
+##Disconsider from here on: Looking at res_time x discharge
 discharge_upstream <- list.files(path= "data/nwis/",pattern = ".rds", full.names = T)%>%
   map(readRDS) %>% 
   data.table::rbindlist(fill=TRUE)%>%
@@ -67,10 +76,9 @@ discharge_upstream_yrs <- group_by(discharge_upstream,
   rename(flow_station_id = site_no)
 
 upstream_flow_hydro <- inner_join(hydrolakes_upstream_sites, discharge_upstream_yrs, by="flow_station_id")%>%
-  group_by(flow_station_id, Res_tim)%>%
-  select(flow_station_id, Res_tim, annual_median_flow)
+  group_by(flow_station_id, res_time_yr)%>%
+  select(flow_station_id, res_time_yr, annual_median_flow)
 
-##Checking residence value values!! RT=1200 yrs??
-ggplot(upstream_flow_hydro, aes(x=annual_median_flow, y=Res_tim)) +
+ggplot(upstream_flow_hydro, aes(x=annual_median_flow, y=res_time_yr)) +
   geom_point(size=2, shape=23)+
   geom_smooth(method=lm)
