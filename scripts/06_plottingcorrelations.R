@@ -62,9 +62,9 @@ phosphorus_conc_files <- list.files(path= "data/nwis/",pattern = ".rds", full.na
 phosphorus_conc_files$year <- year(phosphorus_conc_files$date_time)
 
 phosphorus_conc_yrs <- group_by(phosphorus_conc_files, 
-                          year, site_no) %>%
-  dplyr::summarize(annual_median_TP = mean(phosphorus_mgl))%>%
-  rename(flow_station_id = site_no)
+                          year, flow_station_id) %>%
+  dplyr::summarize(annual_median_TP = mean(phosphorus_mgl))#%>%
+  #rename(flow_station_id = site_no)
 
 
 #I merged hydrolakes and LAGOS in QGis - not sure if it worked well. Maybe repeat this step!
@@ -90,7 +90,7 @@ ggplot(upstream_conc_hydro, aes(x=ann_median_TP_ugl, y=res_time_yr)) +
   geom_point(size=2, shape=23)+
   geom_smooth(method=lm)
 
-ggplot(upstream_conc_hydro, aes(x=Pret_coef, y=res_time_yr)) +
+ggplot(upstream_conc_hydro, aes(x=res_time_yr, y=Pret_coef)) +
   geom_point(size=2, shape=23)+
   geom_smooth(method=lm)
 
