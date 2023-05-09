@@ -7,6 +7,7 @@ candidate_sites <- read.csv("data/candidate_sites_TP_TN_Lagos_lakes.csv",
   dplyr::select(station_id, flow_station_id) %>%
   rename(sites = station_id) 
 
+
 #write.csv(candidate_sites, "upstream_gauges_final.csv")
 
 pb <- progress_bar$new(total = length(candidate_sites$sites),
@@ -100,7 +101,7 @@ for(site_no in candidate_sites$sites){
   read.csv(file_out, stringsAsFactors = FALSE)
 }
 
-
+#preds_annual <- read.csv("data/results/08383500/loadflex.csv")
 # sapply(candidate_sites, function(x) unlink(paste0("data/results/", x, "/loadflex.csv")))
 
 if(interactive()){

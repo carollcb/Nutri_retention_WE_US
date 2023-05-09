@@ -34,8 +34,8 @@ head(candidate_sites_final)
 parameterCd <- "00060" #discharge
 #parameterCd2 <- "00665" #TP: Phosphorus, water, unfiltered, milligrams per liter as phosphorus
 #parameterCd3 <- "00600" #Total nitrogen [nitrate + nitrite + ammonia + organic-N], water, unfiltered, milligrams per liter
-siteNumber <- "06828500" 
-sparrow_id <- "neSRE3REPUB407"
+siteNumber <- "10336780" 
+sparrow_id <- "10336790"
 
 TP_sparrow<- wq_sparrow_TP %>%
   filter(station_id == sparrow_id)%>%
@@ -52,7 +52,22 @@ Q_rawDailyData <- readNWISdv(
   
 test_new <- merge(Q_rawDailyData, TP_sparrow, by = "date_time" )%>%
   dplyr::select(station_id.x, site_no, date_time, flow_cfs,phosphorus_mgl)%>%
-  rename(station_id = station_id.x)
+  rename(station_id = station_id.x)%>%
+  mutate(phosphorus_mgl = as.numeric(phosphorus_mgl))
 
-saveRDS(test_new, "data/nwis/neSRE3REPUB407.rds") 
+saveRDS(test_new, "data/nwis/10336790.rds") 
 
+#fixing double obs in the same month
+
+waCBP161_new <- waCBP161 %>%
+  mutate(year=lubridate::year(date_time),
+         month=lubridate::month(date_time)) %>%
+  group_by(station_id, year, month) %>%
+  slice_sample(n=1)
+
+waCBP161_new2 <- waCBP161_new %>%
+  as.data.frame()%>%
+    filter(flow_cfs > 0)%>%
+  dplyr::select(station_id, site_no, date_time, flow_cfs, phosphorus_mgl)
+
+saveRDS(waCBP161_new2, "data/nwis/waCBP161.rds") 
