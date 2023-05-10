@@ -43,3 +43,31 @@ test_new <- merge(Q_rawDailyData, TP_rawDailyData, by = "date_time" )%>%
   rename(site_no = site_no.x)
 
 saveRDS(test_new, "data/nwis_TN/10343500.rds")  
+
+
+###TN workflow
+
+
+parameterCd <- "00060" #discharge
+parameterCd3 <- "00600" #Total nitrogen [nitrate + nitrite + ammonia + organic-N], water, unfiltered, milligrams per liter
+
+siteNumber <- "12334550" 
+
+# Raw daily data:
+Q_rawDailyData <- readNWISdv(
+  siteNumber, parameterCd,
+  "2000-10-01", "2015-09-30") %>%
+  dplyr::select(site_no,Date, X_00060_00003)%>%
+  rename(date_time = Date, flow_cfs = X_00060_00003)
+
+TN_rawDailyData <- readNWISqw(
+  siteNumber, parameterCd3,
+  "2000-10-01", "2015-09-30") %>%
+  dplyr::select(site_no,sample_dt, result_va)%>%
+  rename(date_time = sample_dt, nitrogen_mgl = result_va)
+
+test_new <- merge(Q_rawDailyData, TN_rawDailyData, by = "date_time" )%>%
+  dplyr::select(site_no.x, date_time, flow_cfs, nitrogen_mgl)%>%
+  rename(site_no = site_no.x)
+
+saveRDS(test_new, "data/nwis_TN/12334550.rds") 
