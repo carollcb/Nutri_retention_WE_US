@@ -11,12 +11,13 @@ TN <- data.frame() # create empty dataframe
 
 
 for(c in 1:length(list_files_TN)) {
-    tmp <- read.csv(list_files_TN[c]) |>
+    tmp <- read.csv(list_files_TN[c]) |> # read in each csv
+      # annoying workaround that I came up with to provide unique IDs
       mutate(id = list_files_TN[c],
              id = gsub('data/results_TN/', '', id),
              id = gsub('/loadflex.csv','',id))
     
-    TN <- bind_rows(TN, tmp) 
+    TN <- bind_rows(TN, tmp) # bind into a single dataframe
 }
 
 
@@ -27,11 +28,12 @@ TP <- data.frame() # create empty dataframe
 
 
 for(c in 1:length(list_files_TP)) {
-  tmp <- read.csv(list_files_TP[c]) |>
+  tmp <- read.csv(list_files_TP[c]) |> # read in each csv
+    # annoying workaround that I came up with to provide unique IDs
     mutate(id = list_files_TP[c],
            id = gsub('data/results_TP/', '', id),
            id = gsub('/loadflex.csv','',id))
   
-  TP <- bind_rows(TP, tmp) 
+  TP <- bind_rows(TP, tmp) # bind into a single dataframe
 }
 
