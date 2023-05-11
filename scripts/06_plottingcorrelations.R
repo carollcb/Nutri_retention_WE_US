@@ -53,7 +53,7 @@ ggplot(upstream_Nconc_hydro, aes(x=(log(flux_gyr/Dis_avg)), y=(log(Nret/Dis_avg)
 ##Phosphorus
 #Plotting residence time (yr, y axis) x inflow P conc (x axis, µg l−1)
 
-phosphorus_conc_files <- list.files(path= "data/nwis/",pattern = ".rds", full.names = T)%>%
+phosphorus_conc_files <- list.files(path= "data/nwis_TP/",pattern = ".rds", full.names = T)%>%
   map(readRDS) %>% 
     data.table::rbindlist(fill=TRUE)%>%
    mutate(phosphorus_mgl = as.numeric(phosphorus_mgl))%>%
