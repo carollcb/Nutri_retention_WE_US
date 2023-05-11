@@ -12,16 +12,12 @@ library(tibble)
 #Using reduced sample so far
 nitrogen_loads <- list.files(path= "data/results_TN/",pattern = ".csv", full.names = T)%>%
   map(read.csv) %>% 
-  data.table::rbindlist()
+  data.table::rbindlist()%>%
+  mutate(flow_station_id = as.character(flow_station_id))
 
-write.csv(nitrogen_loads, "data/TN_loads_test.csv")
-
-TN_loads <- read.csv("data/TN_loads_test.csv")%>%
-  mutate(flow_station_id = as.character(flow_station_id)) #,
-                     # colClasses = c("station_id" = "character", "flow_station_id" = "character")))
-
-
-  
+nitrogen_loads_lt <- nitrogen_loads %>%
+  group_by(flow_station_id) %>%
+  summarise(lt_flux_kgy = median(flux_kgy))
 
 upstream_sites_lagos <- read.csv("data/candidate_sites_TP_TN_Lagos_lakes.csv",
                                  colClasses = "character",
@@ -36,17 +32,26 @@ hydrolakes_lagos <- st_read("shps/joined_hydrolakes_lagos.shp") %>%
 hydrolakes_upstream_sites <- inner_join(upstream_sites_lagos, hydrolakes_lagos, by="lagoslakeid")
 
 
-upstream_Nconc_hydro <- inner_join(hydrolakes_upstream_sites, TN_loads, by="flow_station_id")%>%
+upstream_Nconc_hydro <- inner_join(hydrolakes_upstream_sites, nitrogen_loads, by="flow_station_id")%>%
   mutate(flux_gyr = flux_kgy/1000)%>%
   group_by(flow_station_id, Dis_avg)%>%
-  select(flow_station_id, Dis_avg, flux_gyr)
-
-#R =((10^(1.00*(log(x/water discharge))- 0:39))/(water discharge))
-upstream_Nconc_hydro <- upstream_Nconc_hydro %>%
-  #na.omit() %>%
+  select(flow_station_id, Dis_avg, flux_gyr)%>%
+  na.omit() %>%
   mutate(Nret = ((10^(1.00*(log(flux_gyr/Dis_avg))- 0.39))/(Dis_avg)))
 
-ggplot(upstream_Nconc_hydro, aes(x=(log(flux_gyr/Dis_avg)), y=(log(Nret/Dis_avg)))) +
+ggplot(upstream_Nconc_hydro, aes(x=flux_gyr, y=Nret)) +
+  geom_point(size=2, shape=23)+
+  geom_smooth(method=lm)
+
+#long-term values?
+upstream_Nconc_hydro_lt <- inner_join(hydrolakes_upstream_sites, nitrogen_loads_lt, by="flow_station_id")%>%
+  mutate(flux_gyr = lt_flux_kgy/1000)%>%
+  group_by(flow_station_id, Dis_avg)%>%
+  select(flow_station_id, Dis_avg, flux_gyr)%>%
+  na.omit() %>%
+  mutate(Nret = ((10^(1.00*(log(flux_gyr/Dis_avg))- 0.39))/(Dis_avg)))
+
+ggplot(upstream_Nconc_hydro_lt, aes(x=flux_gyr, y=Nret)) +
   geom_point(size=2, shape=23)+
   geom_smooth(method=lm)
 
