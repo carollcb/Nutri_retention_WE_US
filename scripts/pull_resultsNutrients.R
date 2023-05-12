@@ -37,3 +37,17 @@ for(c in 1:length(list_files_TP)) {
   TP <- bind_rows(TP, tmp) # bind into a single dataframe
 }
 
+##joining loads data
+
+TP_loads <- TP %>%
+  rename(station_id = id)%>%
+  rename(fluxTP_kgy = flux_kgy)
+
+TN_loads <- TN %>%
+  rename(station_id = id)%>%
+  rename(fluxTN_kgy = flux_kgy)
+
+#nutrient_loads <- inner_join(TP_loads, TN_loads, by= "station_id")
+  
+  
+  

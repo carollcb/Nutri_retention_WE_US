@@ -1,9 +1,16 @@
-source("scripts/99_utils.R")
+source("scripts/99_utils_N.R")
+library(dataRetrieval)
+library(loadflex)
+library(tidyverse)
 
-candidate_sites <- read.csv("data/candidate_sites_WE_TN.csv",
+
+candidate_sites <- read.csv("data/candidate_sites_TP_TN_Lagos_lakes.csv",
                             colClasses = "character",
                             stringsAsFactors = FALSE
-) 
+)  %>%
+  dplyr::select(station_id, flow_station_id) %>%
+  rename(sites = station_id) 
+
 
 pb <- progress_bar$new(total = length(candidate_sites$sites),
                        format = "calculating loading for :site_no [:bar] :percent",
@@ -28,7 +35,7 @@ for(site_no in candidate_sites$sites){
     data <- dt
     
     model_no <- selBestModel(
-      "TN_mgl",
+      "nitrogen_mgl",
       data = data, flow = "flow_cfs",
       dates = "date_time", conc.units = "mg/L",
       station = site_no, time.step = "instantaneous")$model.no
@@ -37,7 +44,7 @@ for(site_no in candidate_sites$sites){
     
     fit_reg2 <- suppressWarnings(suppressMessages(loadReg2(
       loadReg(
-        as.formula(paste0("TN_mgl ~ model(", model_no, ")")),
+        as.formula(paste0("nitrogen_mgl ~ model(", model_no, ")")),
         data = data, flow = "flow_cfs", dates = "date",
         time.step = "day")
     )))
@@ -68,10 +75,10 @@ for(site_no in candidate_sites$sites){
     # plot(preds$date, preds$flux, type='l', main = paste0('Model ', model_no))
     
     # get annual load, flow, concentration time series
-    tp_summary  <- data %>%
+    nitrogen_summary  <- data %>%
       mutate(water_year = calcWaterYear(date)) %>%
       group_by(water_year) %>%
-      summarize(tp_mgl = mean(TN_mgl, na.rm = TRUE)) %>%
+      summarize(nitrogen_mgl = mean(nitrogen_mgl, na.rm = TRUE)) %>%
       dplyr::filter(water_year >= 2000 & water_year <= 2018)
     
     preds_annual <- left_join(preds, flow_interp, by = "date") %>%
@@ -81,7 +88,7 @@ for(site_no in candidate_sites$sites){
       summarize(flux_kgy = sum(flux),  # kg/yr
                 flow_m3y = mean(flow_cfs) * 893000.0741) %>%  # m3/yr
       dplyr::filter(water_year >= 2000 & water_year <= 2018) %>%
-      left_join(tp_summary, by = "water_year")
+      left_join(nitrogen_summary, by = "water_year")
     
     preds_annual$RSQ     <- fit$lfit$RSQ # lfit = load
     preds_annual$p.value <- summarizeModel(fit)$p.value
@@ -136,7 +143,7 @@ if(interactive()){
   preds <- predictSolute(fit_reg2, 'conc', date = TRUE, se.fit = TRUE,
                          lin.or.log = 'lin')
   plot(new_dt$date, preds$conc, type='l', main = paste0('Model ', model_no))
-  points(dt$date, dt$TN_mgl, col='red3')
+  points(dt$date, dt$nitrogen_mgl, col='red3')
   
   
   
@@ -145,10 +152,10 @@ if(interactive()){
   # dplyr::filter(dataRetrieval::pCodeToName,
   #               parm_cd == "00060")
   dplyr::filter(dataRetrieval::pCodeToName,
-                characteristicname == "TN_mg.l.as.P")
+                characteristicname == "nitrogen_mg.l.as.P")
   
   dataRetrieval::pCodeToName %>%
-    filter(str_detect(characteristicname, "^TN")) %>%
+    filter(str_detect(characteristicname, "^nitrogen")) %>%
     View()
   
   
@@ -157,13 +164,13 @@ if(interactive()){
   
   par(mfrow = c(2, 1))
   plot(dt$flow$dateTime, dt$flow$result_va, type = "l")
-  plot(dt$TN_grab$startDateTime, dt$TN_grab$result_va, type = "l")
+  plot(dt$nitrogen_grab$startDateTime, dt$nitrogen_grab$result_va, type = "l")
   
   
   #####
   
   data(app1.calib)
-  app1.lr <- selBestModel("TN", data = app1.calib,
+  app1.lr <- selBestModel("nitrogen", data = app1.calib,
                           flow = "FLOW", dates = "DATES", conc.units="mg/L",
                           station=site_no)
   # Extract the fitted values

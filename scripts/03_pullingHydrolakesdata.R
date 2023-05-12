@@ -50,7 +50,10 @@ wu_epa_nla <- wu_epa_nla %>%
   dplyr::select(ID, UID, AREA_HA, COMID2012, NARS_NAME, Area, Chla, TNmean, TPmean, N_Load, N_EN, N_DE, N_Outflow, P_Load, P_EN, P_DE, P_Outflow)
 
 wu_epa_nla_LAGOS_locus <- right_join(lagos_info, wu_epa_nla, by = "COMID2012") %>%
-  drop_na()
+  drop_na()%>%
+mutate(NetPRet = log(P_EN - P_DE), NetNRet = log(N_EN - N_DE)) %>%
+  mutate(EnrDepP_ratio = (P_EN/P_DE), EnrDepN_ratio = (N_EN/N_DE))%>%
+  mutate(Pret = (P_DE - P_EN), Nret = (N_DE - N_EN))
 
 #Wu + EPA + LAGOS-US Locus = 158 lakes
 #n_distinct(wu_epa_nla_LAGOS_locus$lagoslakeid) = 157 lakes
@@ -58,7 +61,6 @@ wu_epa_nla_LAGOS_locus <- right_join(lagos_info, wu_epa_nla, by = "COMID2012") %
 #Wu + LAGOS-US Locus + Hydrolakes = 158 lakes
 Wu_Lagos_lakes_hydro_sp <- st_read("shps/Wu_Lagos_lakes_hydro.shp")%>% #all lakes
   rename(lagoslakeid = lagslkd)%>%
-  mutate(EnrDepP_ratio = (P_EN/P_DE), EnrDepN_ratio = (N_EN/N_DE))%>%
   mutate(log_ResTim = log(Res_tim)) 
 
 mapview(Wu_Lagos_lakes_hydro_sp, zcol = "EnrDepP_ratio")
@@ -67,8 +69,7 @@ mapview(Wu_Lagos_lakes_hydro_sp, zcol = "EnrDepP_ratio")
 Wu_Lagos_lakes_hydro_df <- Wu_Lagos_lakes_hydro_sp %>%
   #as_tibble() %>% #no longer sf
   as.data.frame() %>%
-  dplyr::select(lagoslakeid, lk_lt_d, lk_ln_d, P_DE, P_EN, N_DE, N_EN, Res_tim, EnrDepP_ratio, EnrDepN_ratio, log_ResTim)%>%
-  mutate(Pret = (P_DE - P_EN), Nret = (N_DE - N_EN)) %>% 
+  dplyr::select(lagoslakeid, lk_lt_d, lk_ln_d, P_DE, P_EN, N_DE, N_EN, Res_tim, EnrDepP_ratio, EnrDepN_ratio, log_ResTim) %>% 
   #filter(Pret >0, Nret>0) %>%
   rename(lat = lk_lt_d, lon= lk_ln_d) %>%
   drop_na() 
@@ -93,8 +94,7 @@ Wu_Lagos_lakes_hydro_few <- Wu_Lagos_lakes_hydro_sp %>%
   dplyr::select(lk_lt_d, lk_ln_d, P_DE, P_EN, N_DE, N_EN, Res_tim, EnrDepP_ratio, EnrDepN_ratio, log_ResTim)%>%
  # mutate(Res_tim_yr = Res_tim/365) %>% #changing from days to years
   mutate(Pret = (P_DE - P_EN), Nret = (N_DE - N_EN)) %>% 
-  mutate(NetPRet = log(P_EN - P_DE), NetNRet = log(N_EN - N_DE)) %>% 
-  #filter(Pret >0, Nret>0) %>%
+    #filter(Pret >0, Nret>0) %>%
   rename(lat = lk_lt_d, lon= lk_ln_d) %>%
   drop_na() 
 
