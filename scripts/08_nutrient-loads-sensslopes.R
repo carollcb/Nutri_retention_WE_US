@@ -206,21 +206,38 @@ ggsave("figures/TN_load_trends.png", width=8, height=6,units="in", dpi=300)
   
 ##merging trend sites with df
 
+ts_TNtrends_lakes <- left_join(upstream_sites_lagos, nutrient_loads_unnested, by="station_id")%>%
+    filter(nutrient=="TN") %>%
+  group_by(lagoslakeid) %>%
+  select(lake_namelagos, lagoslakeid, Trend, lon, lat)%>%
+  distinct()%>%
+  na.omit() 
+
+ts_TPtrends_lakes <- left_join(upstream_sites_lagos, nutrient_loads_unnested, by="station_id")%>%
+  filter(nutrient=="TP") %>%
+  group_by(lagoslakeid) %>%
+  select(lake_namelagos, lagoslakeid, Trend, lon, lat)%>%
+  distinct()%>%
+  na.omit() 
+
 ts_trends_lakes <- left_join(upstream_sites_lagos, nutrient_loads_unnested, by="station_id")%>%
   group_by(lagoslakeid) %>%
   select(lake_namelagos, lagoslakeid, Trend, lon, lat)%>%
   distinct()%>%
   na.omit() 
 
+filter(ts_TNtrends_lakes, Trend == "no trend")
+filter(ts_TPtrends_lakes, Trend == "no trend")
 
 ts_trends_lakes_sp <- ts_trends_lakes %>%
                st_as_sf( coords= c("lon", "lat"),
                        crs=4326) %>%
   filter(!Trend=="no trend") 
 
-mapview(ts_trends_lakes_sp, zcol = "Trend")
+mapview(ts_trends_lakes_sp, zcol = "Trend") 
 
 ggplot()+
-  geom_sf(aes(color = Trend), data = ts_trends_lakes_sp) +
+  geom_sf(aes(color = Trend), data = ts_TPtrends_lakes_sp) +
+  geom_sf(aes(color = Trend), data = ts_TNtrends_lakes_sp) +
   theme(legend.position="left")
 
