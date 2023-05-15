@@ -7,14 +7,13 @@ library(trend)
 library(zip)
 
 #For TP loads
-TP_loads_ts <- TP_loads %>%
+TP_loads_ts <- phosphorus_loads %>%
   dplyr::select(station_id, water_year, fluxTP_kgy)
   
 #Mann-Kendall test
 mk <-trend::mk.test(TP_loads_ts$fluxTP_kgy)
 mk #Trend is significant! p<0.05
 mk_df <- glance(mk) 
-View(mk_df)
 
 sens <-trend::sens.slope(TP_loads_ts$fluxTP_kgy)
 print(sens)
@@ -37,14 +36,13 @@ p1 <- TP_loads_ts %>%
        y="Annual TP loads (kgy-1)", x="Water Year")
 
 #For TN loads
-TN_loads_ts <- TN_loads %>%
+TN_loads_ts <- nitrogen_loads %>%
   dplyr::select(station_id, water_year, fluxTN_kgy)
 
 #Mann-Kendall test
 mk <-trend::mk.test(TN_loads_ts$fluxTN_kgy)
 mk #Trend is significant! p<0.05
 mk_df <- glance(mk) 
-View(mk_df)
 
 sens <-trend::sens.slope(TN_loads_ts$fluxTN_kgy)
 print(sens)
