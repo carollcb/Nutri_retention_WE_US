@@ -112,3 +112,21 @@ upstream_flow_hydro <- inner_join(hydrolakes_upstream_sites, discharge_upstream_
 ggplot(upstream_flow_hydro, aes(x=annual_median_flow, y=res_time_yr)) +
   geom_point(size=2, shape=23)+
   geom_smooth(method=lm)
+
+##P retention x P loads
+
+P_loads_lt <- TP_loads %>%
+  group_by(station_id) %>%
+  summarise(lt_flux_kgy = median(fluxTP_kgy))
+
+
+upstream_Pconc_hydro_lt <- inner_join(hydrolakes_upstream_sites, P_loads_lt, by="station_id")%>%
+  mutate(fluxTP_gyr = lt_flux_kgy/1000)%>%
+  group_by(station_id, Dis_avg)%>%
+  select(station_id, Dis_avg, fluxTP_gyr)%>%
+  na.omit() %>%
+  mutate(Pret_coef = ((1-(1.43/lt_median_TP_ugl))*((lt_median_TP_ugl)/(1 + (res_time_yr^0.5)))^0.88))
+
+ggplot(upstream_Pconc_hydro_lt, aes(x=fluxTP_gyr, y=Pret_coef)) +
+  geom_point(size=2, shape=23)+
+  geom_smooth(method=lm)
