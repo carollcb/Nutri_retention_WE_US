@@ -30,7 +30,7 @@ hydrolakes_upstream_sites <- inner_join(upstream_sites_lagos, hydrolakes_lagos, 
  # data.table::rbindlist()%>%
 #  mutate(flow_station_id = as.character(flow_station_id))
 
-nitrogen_loads_lt <- TN_loads %>%
+nitrogen_loads_lt <- TN_loads_lagos %>%
   group_by(station_id) %>%
   summarise(lt_flux_kgy = median(fluxTN_kgy))
 
@@ -49,7 +49,7 @@ ggplot(upstream_Nconc_hydro_lt, aes(x=fluxTN_gyr, y=Nret)) +
 
 upstream_Nconc_hydro_lt_nooutl <- upstream_Nconc_hydro_lt[-15,]
 
-ggplot(upstream_Nconc_hydro_lt_nooutl, aes(x=fluxTN_gyr, y=Nret)) +
+g1 <- ggplot(upstream_Nconc_hydro_lt_nooutl, aes(x=fluxTN_gyr, y=Nret)) +
   geom_point(size=2, shape=23)+
   geom_smooth(method=lm)
 
@@ -78,7 +78,7 @@ group_by(flow_station_id) %>%
 upstream_conc_hydro <- inner_join(hydrolakes_upstream_sites, phosphorus_conc_lt, by="flow_station_id")%>%
   mutate(lt_median_TP_ugl = lt_median_tp*1000)%>%
    group_by(flow_station_id, res_time_yr)%>%
-  select(flow_station_id, res_time_yr, lt_median_TP_ugl)
+  select(flow_station_id, res_time_yr, lt_median_TP_ugl, station_id)
 
 upstream_conc_hydro <- upstream_conc_hydro %>%
   mutate(Pret_coef = ((1-(1.43/lt_median_TP_ugl))*((lt_median_TP_ugl)/(1 + (res_time_yr^0.5)))^0.88))
@@ -92,41 +92,25 @@ ggplot(upstream_conc_hydro, aes(x=res_time_yr, y=Pret_coef)) +
   geom_point(size=2, shape=23)+
   geom_smooth(method=lm)
 
-##Not run from here on: Looking at res_time x discharge
-discharge_upstream <- list.files(path= "data/nwis/",pattern = ".rds", full.names = T)%>%
-  map(readRDS) %>% 
-  data.table::rbindlist(fill=TRUE)%>%
-  mutate(flow_cfs = as.numeric(flow_cfs))
-
-discharge_upstream$year <- year(discharge_upstream$date_time)
-
-discharge_upstream_yrs <- group_by(discharge_upstream, 
-                                year, site_no) %>%
-  dplyr::summarize(annual_median_flow = median(flow_cfs))%>%
-  rename(flow_station_id = site_no)
-
-upstream_flow_hydro <- inner_join(hydrolakes_upstream_sites, discharge_upstream_yrs, by="flow_station_id")%>%
-  group_by(flow_station_id, res_time_yr)%>%
-  select(flow_station_id, res_time_yr, annual_median_flow)
-
-ggplot(upstream_flow_hydro, aes(x=annual_median_flow, y=res_time_yr)) +
-  geom_point(size=2, shape=23)+
-  geom_smooth(method=lm)
 
 ##P retention x P loads
+TP_loads <- TP %>%
+  rename(station_id = id)%>%
+  rename(fluxTP_kgy = flux_kgy) 
 
 P_loads_lt <- TP_loads %>%
   group_by(station_id) %>%
   summarise(lt_flux_kgy = median(fluxTP_kgy))
 
 
-upstream_Pconc_hydro_lt <- inner_join(hydrolakes_upstream_sites, P_loads_lt, by="station_id")%>%
+upstream_Pconc_hydro_lt <- inner_join(upstream_conc_hydro, P_loads_lt, by="station_id")%>%
   mutate(fluxTP_gyr = lt_flux_kgy/1000)%>%
-  group_by(station_id, Dis_avg)%>%
-  select(station_id, Dis_avg, fluxTP_gyr)%>%
-  na.omit() %>%
-  mutate(Pret_coef = ((1-(1.43/lt_median_TP_ugl))*((lt_median_TP_ugl)/(1 + (res_time_yr^0.5)))^0.88))
+  group_by(station_id)%>%
+  select(station_id, Pret_coef, fluxTP_gyr)%>%
+  na.omit() 
 
-ggplot(upstream_Pconc_hydro_lt, aes(x=fluxTP_gyr, y=Pret_coef)) +
+g2 <- ggplot(upstream_Pconc_hydro_lt, aes(x=fluxTP_gyr, y=Pret_coef)) +
   geom_point(size=2, shape=23)+
   geom_smooth(method=lm)
+
+g1 + g2  ##asking linnea to check P retention values -> accord Hejzlar those should be something between 0.02 and 0.96

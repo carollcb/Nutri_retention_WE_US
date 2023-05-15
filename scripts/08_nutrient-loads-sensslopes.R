@@ -7,6 +7,8 @@ library(trend)
 library(zip)
 library(purrr)
 library(ggpubr)
+library(sf)
+library(mapview)
 
 
 #For TP loads
@@ -167,4 +169,58 @@ ggplot() +
 ggsave("figures/TN_load_trends.png", width=8, height=6,units="in", dpi=300)
 
 
+##testing plotting per station_id
+
+#g1 <- 
+  ggplot() +
+  geom_point(data = all_loads_ts %>%
+               filter(station_id %in% trending_sites$station_id) %>%
+               filter(nutrient=="TN") %>%
+               mutate(water_year=round(water_year, 0),
+                      water_year=as.integer(water_year)),
+             aes(y = flux, x=water_year, fill=nutrient),
+             col = "black", shape=21)+
+ facet_wrap(.~station_id, scales="free_y")  +
+  # facet_grid(station_id~nutrient, scales = "free") + #You might like the facet_wrap version better
+  geom_abline(flux_slope_intercept %>%
+                filter(nutrient=="TN"),
+              mapping=aes(intercept = intercept, slope = slope, group=station_id,
+                          color=nutrient))+
+
+#g2 <- ggplot() +
+  geom_point(data = all_loads_ts %>%
+               filter(station_id %in% trending_sites$station_id) %>%
+               filter(nutrient=="TP") %>%
+               mutate(water_year=round(water_year, 0),
+                      water_year=as.integer(water_year)),
+             aes(y = flux, x=water_year, fill=nutrient),
+             col = "black", shape=21)+
+   # scale_y_continuous("TN flux",  sec.axis = sec_axis(~ . *2), name = "TP loads") +
+  facet_wrap(.~station_id, scales="free_y")  +
+ # facet_grid(station_id~nutrient, scales = "free") + #You might like the facet_wrap version better
+  geom_abline(flux_slope_intercept %>%
+                filter(nutrient=="TP"),
+              mapping=aes(intercept = intercept, slope = slope, group=station_id,
+                          color=nutrient))
+#g1 + g2
+  
+##merging trend sites with df
+
+ts_trends_lakes <- left_join(upstream_sites_lagos, nutrient_loads_unnested, by="station_id")%>%
+  group_by(lagoslakeid) %>%
+  select(lake_namelagos, lagoslakeid, Trend, lon, lat)%>%
+  distinct()%>%
+  na.omit() 
+
+
+ts_trends_lakes_sp <- ts_trends_lakes %>%
+               st_as_sf( coords= c("lon", "lat"),
+                       crs=4326) %>%
+  filter(!Trend=="no trend") 
+
+mapview(ts_trends_lakes_sp, zcol = "Trend")
+
+ggplot()+
+  geom_sf(aes(color = Trend), data = ts_trends_lakes_sp) +
+  theme(legend.position="left")
 
