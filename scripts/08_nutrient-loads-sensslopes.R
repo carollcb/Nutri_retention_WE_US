@@ -251,7 +251,7 @@ ts_TNtrends_lakes <- left_join(upstream_sites_lagos, nutrient_loads_unnested, by
 ts_TPtrends_lakes <- left_join(upstream_sites_lagos, nutrient_loads_unnested, by="station_id")%>%
   filter(nutrient=="TP") %>%
   group_by(lagoslakeid) %>%
-  select(lake_namelagos, lagoslakeid, Trend, lon, lat)%>%
+  select(station_id, lake_namelagos, lagoslakeid, Trend, lon, lat)%>%
   distinct()%>%
   na.omit() 
 
@@ -275,4 +275,17 @@ ggplot()+
   geom_sf(aes(color = Trend), data = ts_TPtrends_lakes_sp) +
   geom_sf(aes(color = Trend), data = ts_TNtrends_lakes_sp) +
   theme(legend.position="left")
+
+##Comparing some LAGOS-Limno data and loads trends
+
+loads_trends_onsite_concTP <- left_join(TP_loads_ts, upstream_gauges_lakes_all, by="station_id")%>%
+  filter(nutrient == "TP" & station_id == "09352900")
+
+
+ggplot(loads_trends_onsite_concTP) +
+  geom_point(aes(x=year, y=log(tp_ugl_median)), col = "red", size=3, shape=16)+
+  geom_point(aes(x=water_year, y=log(flux)),
+             col = "black",size=2, shape=15)+
+  theme_bw()
+
 
