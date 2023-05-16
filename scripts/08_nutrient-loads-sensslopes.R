@@ -170,6 +170,16 @@ ggsave("figures/TN_load_trends.png", width=8, height=6,units="in", dpi=300)
 
 
 ##testing plotting per station_id
+max_TN <- all_loads_ts %>%
+  filter(nutrient=="TN") %>%
+  filter(!station_id=="14206500") 
+
+max_TNloads <- max(max_TN$flux)
+
+max_TP <- all_loads_ts %>%
+  filter(nutrient=="TP") 
+
+max_TPloads <- max(max_TP$flux)
 
 #g1 <- 
   ggplot() +
@@ -201,9 +211,34 @@ ggsave("figures/TN_load_trends.png", width=8, height=6,units="in", dpi=300)
   geom_abline(flux_slope_intercept %>%
                 filter(nutrient=="TP"),
               mapping=aes(intercept = intercept, slope = slope, group=station_id,
-                          color=nutrient))
+                          color=nutrient))+
+    scale_y_continuous(sec.axis = sec_axis(trans = ~ . * (max_TPloads/ max_TNloads),
+                                           name = 'TN flux')) +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1),
+          axis.text.y = element_text(color = "#4B92DB"),
+          axis.text.y.right = element_text(color = "red"),
+          legend.position="right") +
+    ylab('TP flux')
 #g1 + g2
+
   
+  
+  d2 <- gather(d1, 'var', 'val', stones:revenue) %>% 
+    mutate(val = if_else(var == 'revenue', as.double(val), val / (max_stones / max_revenue)))
+  
+  ggplot(mapping = aes(clarity, val)) +
+    geom_bar(aes(fill = cut), filter(d2, var == 'revenue'), stat = 'identity') +
+    geom_point(data = filter(d2, var == 'stones'), col = 'red') +
+    facet_grid(~cut) +
+    scale_y_continuous(sec.axis = sec_axis(trans = ~ . * (max_stones / max_revenue),
+                                           name = 'number of stones'),
+                       labels = dollar) +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1),
+          axis.text.y = element_text(color = "#4B92DB"),
+          axis.text.y.right = element_text(color = "red"),
+          legend.position="bottom") +
+    ylab('revenue')  
+    
 ##merging trend sites with df
 
 ts_TNtrends_lakes <- left_join(upstream_sites_lagos, nutrient_loads_unnested, by="station_id")%>%
