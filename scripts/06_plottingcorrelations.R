@@ -34,6 +34,9 @@ nitrogen_loads_lt <- TN_loads_lagos %>%
   group_by(station_id) %>%
   summarise(lt_flux_kgy = median(fluxTN_kgy))
 
+P_discharge_lt <- TP_loads_lagos %>%
+  group_by(flow_station_id) %>%
+  summarise(lt_flow_m3y = median(flow_m3y))
 
 #long-term values?
 upstream_Nconc_hydro_lt <- inner_join(hydrolakes_upstream_sites, nitrogen_loads_lt, by="station_id")%>%
@@ -49,7 +52,7 @@ ggplot(upstream_Nconc_hydro_lt, aes(x=fluxTN_gyr, y=Nret)) +
 
 upstream_Nconc_hydro_lt_nooutl <- upstream_Nconc_hydro_lt[-15,]
 
-g1 <- ggplot(upstream_Nconc_hydro_lt_nooutl, aes(x=fluxTN_gyr, y=Nret)) +
+ggplot(upstream_Nconc_hydro_lt_nooutl, aes(x=fluxTN_gyr, y=Nret)) +
   geom_point(size=2, shape=23)+
   geom_smooth(method=lm)
 
@@ -80,9 +83,15 @@ upstream_conc_hydro <- inner_join(hydrolakes_upstream_sites, phosphorus_conc_lt,
    group_by(flow_station_id, res_time_yr)%>%
   select(flow_station_id, res_time_yr, lt_median_TP_ugl, station_id)
 
+#upstream_dis_con <- inner_join(upstream_conc_hydro, P_discharge_lt, by="flow_station_id")%>%
+#  mutate(Pin = lt_median_TP_ugl * lt_flow_m3y)
+
 upstream_conc_hydro <- upstream_conc_hydro %>%
   mutate(Pret_coef = ((1-(1.43/lt_median_TP_ugl))*((lt_median_TP_ugl)/(1 + (res_time_yr^0.5)))^0.88))
 #Hejzlar says this number is something between 0.02 and 0.96 -> check that!
+
+#upstream_conc_hydro <- upstream_dis_con %>%
+ # mutate(Pret_coef = ((1-(1.43/Pin))*((Pin)/(1 + (res_time_yr^0.5)))^0.88))
 
 ggplot(upstream_conc_hydro, aes(x=lt_median_TP_ugl, y=Pret_coef)) +
   geom_point(size=2, shape=23)+
@@ -113,4 +122,4 @@ g2 <- ggplot(upstream_Pconc_hydro_lt, aes(x=fluxTP_gyr, y=Pret_coef)) +
   geom_point(size=2, shape=23)+
   geom_smooth(method=lm)
 
-g1 + g2  ##asking linnea to check P retention values -> accord Hejzlar those should be something between 0.02 and 0.96
+g1 + g2  ##check with the group -> accord Hejzlar those should be something between 0.02 and 0.96
