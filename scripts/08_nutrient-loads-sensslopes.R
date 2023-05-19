@@ -10,6 +10,7 @@ library(ggpubr)
 library(sf)
 library(mapview)
 
+source("scripts/07_organizing-nutrient-loads-df.R")
 
 #For TP loads
 TP_loads_ts <- phosphorus_loads %>%
