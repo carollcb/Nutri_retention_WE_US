@@ -16,7 +16,7 @@ atm_depos_N <- lagos_geo_atm %>%
   rename(hu12_zoneid = zoneid)
 
 
-atm_depos_N_final <- inner_join(atm_depos_N, dt1, by= "hu12_zoneid")%>%
+atm_depos_N_final <- inner_join(atm_depos_N, d_mm, by= "hu12_zoneid")%>%
   select(lagoslakeid, lake_namelagos, lake_lat_decdeg, lake_lon_decdeg, lake_elevation_m, lake_centroidstate, year,variable_name, value)%>%
   mutate(lagoslakeid=as.character(lagoslakeid))
 
@@ -57,7 +57,7 @@ TN_loads_lagos <- inner_join(upstream_sites_lagos, nitrogen_loads , by= "station
 atm_depos_N_lakes <- left_join(upstream_sites_lagos, atm_depos_N_final, by= "lagoslakeid")%>%
   rename(water_year = year, totaldepnitrogen_kgperha = value)%>%
   mutate(totaldepnitrogen_kgperha=as.numeric(totaldepnitrogen_kgperha))%>%
-  select(lagoslakeid, water_year, totaldepnitrogen_kgperha)
+  select(lagoslakeid, water_year, totaldepnitrogen_kgperha, lake_lon_decdeg, lake_lat_decdeg)
 
 total_Nload <- merge(atm_depos_N_lakes , TN_loads_lagos)%>%
   mutate(totTNload_gm2yr = ((totaldepnitrogen_kgperha + fluxTN_kgy)*0.1))

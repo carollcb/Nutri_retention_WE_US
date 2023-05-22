@@ -12,6 +12,12 @@ upstream_sites_lagos <- read.csv("data/candidate_sites_TP_TN_Lagos_lakes.csv",
                                  stringsAsFactors = FALSE
 ) 
 
+
+## How many lakes x reservoirs?
+upstream_sites_lagos_sp <- st_as_sf(upstream_sites_lagos, coords= c("lon", "lat"), crs= 4326)
+mapview(upstream_sites_lagos_sp) #22 lakes and 18 reservoirs
+
+
 #I merged hydrolakes and LAGOS in QGis - not sure if it worked well. Maybe repeat this step!
 hydrolakes_lagos <- st_read("shps/joined_hydrolakes_lagos.shp") %>% 
   rename(lagoslakeid = lagoslakei)%>%
