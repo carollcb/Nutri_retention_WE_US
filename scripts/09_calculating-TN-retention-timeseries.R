@@ -7,6 +7,7 @@ library(tidyverse)
 library(sf)
 library(mapview)
 library(ggmap)
+library(patchwork)
 
 Nretention <- total_Nload %>%
   mutate(TN_removal_gNm2yr =(10^(-0.27 + (0.82 * log(totTNload_gm2yr)))))
@@ -36,9 +37,10 @@ Nretention_ts <- merge(Nretention, ts_hydro_us)
 
 by(Nretention_ts,factor(Nretention_ts$categorical_ts),summary)
 
-ggplot(Nretention_ts, aes(y=TN_removal_gNm2yr, x=categorical_ts)) +
+g1 <- ggplot(Nretention_ts, aes(y=TN_removal_gNm2yr, x=categorical_ts)) +
   geom_boxplot(aes(fill = categorical_ts), outlier.shape = NA)  + geom_jitter(height = 0, width = 0.1)+
   scale_y_continuous(limits = quantile(Nretention_ts$TN_removal_gNm2yr, c(0.1, 0.9)))+
+  ggtitle("N removal in gNm-2yr-1 based on lakes and reservoirs trophic state")+
   theme_bw()
 
 Nretention_ts_sp <- Nretention_ts%>%
@@ -52,3 +54,54 @@ Nretention_ts_sp <- Nretention_ts%>%
 #p + geom_point(aes(x = lake_lon_decdeg, y = lake_lat_decdeg,  color = categorical_ts, size = TN_removal_gNm2yr), data = Nretention_ts) +
  # theme(legend.position="left")+
  # scale_size(breaks=c(10000,1000000, 1000000000),guide="legend")
+
+####-----Calculating TP retention coefficient time-series and merging with trophic state dataset
+upstream_sites_lagos <- read.csv("data/candidate_sites_TP_TN_Lagos_lakes.csv",
+                                 colClasses = "character",
+                                 stringsAsFactors = FALSE
+)
+
+phosphorus_conc_files <- list.files(path= "data/nwis_TP/",pattern = ".rds", full.names = T)%>%
+  map(readRDS) %>% 
+  data.table::rbindlist(fill=TRUE)%>%
+  mutate(phosphorus_mgl = as.numeric(phosphorus_mgl))%>%
+  rename(flow_station_id = site_no)
+
+phosphorus_conc_files$year <- year(phosphorus_conc_files$date_time)
+
+phosphorus_conc_yrs <- group_by(phosphorus_conc_files, 
+                                year, flow_station_id) %>%
+  dplyr::summarize(annual_median_TP = mean(phosphorus_mgl))%>%
+  #rename(flow_station_id = site_no)
+  na.omit()
+
+
+upstream_conc_hydro <- inner_join(hydrolakes_upstream_sites, phosphorus_conc_yrs, by="flow_station_id")%>%
+  mutate(annual_median_TP_ugl = annual_median_TP*1000)%>%
+  group_by(flow_station_id, res_time_yr)%>%
+  select(flow_station_id, year, res_time_yr, annual_median_TP_ugl, station_id)
+
+
+upstream_conc_hydro <- upstream_conc_hydro %>%
+  mutate(Pret_coef = ((1-(1.43/annual_median_TP_ugl))*((annual_median_TP_ugl)/(1 + (res_time_yr^0.5)))^0.88))%>% #nondimensional?
+  #rename(flow_station_id = site_no)
+  na.omit()
+
+Pretention_lakes <- left_join(upstream_sites_lagos, upstream_conc_hydro, by= "station_id")%>%
+  rename(water_year = year)%>%
+  mutate(Pret_coef=as.numeric(Pret_coef))%>%
+  select(lagoslakeid, water_year, Pret_coef, annual_median_TP_ugl)%>% 
+  #rename(flow_station_id = site_no)
+  na.omit()
+
+Pretention_ts <- merge(Pretention_lakes, ts_hydro_us)
+
+by(Pretention_ts,factor(Pretention_ts$categorical_ts),summary)
+
+g2 <- ggplot(Pretention_ts, aes(y=Pret_coef, x=categorical_ts)) +
+  geom_boxplot(aes(fill = categorical_ts), outlier.shape = NA)  + geom_jitter(height = 0, width = 0.1)+
+  #scale_y_continuous(limits = quantile(Pretention_ts$Pret_coef, c(0.1, 0.9)))+
+  ggtitle("P retention coeficient based on lakes and reservoirs trophic state")+
+  theme_bw()
+
+g1 + g2
