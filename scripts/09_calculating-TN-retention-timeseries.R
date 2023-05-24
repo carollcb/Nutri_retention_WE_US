@@ -61,6 +61,7 @@ upstream_sites_lagos <- read.csv("data/candidate_sites_TP_TN_Lagos_lakes.csv",
                                  stringsAsFactors = FALSE
 )
 
+##Change to get the new rds files! (Alice comment: "make sure the loads consider daily discharge (interpolated P concentrations * daily discharge)
 phosphorus_conc_files <- list.files(path= "data/nwis_TP/",pattern = ".rds", full.names = T)%>%
   map(readRDS) %>% 
   data.table::rbindlist(fill=TRUE)%>%
@@ -70,16 +71,22 @@ phosphorus_conc_files <- list.files(path= "data/nwis_TP/",pattern = ".rds", full
 phosphorus_conc_files$year <- year(phosphorus_conc_files$date_time)
 
 phosphorus_conc_yrs <- group_by(phosphorus_conc_files, 
-                                year, flow_station_id) %>%
+                                year, flow_station_id, flow_cfs) %>%
   dplyr::summarize(annual_median_TP = mean(phosphorus_mgl))%>%
   #rename(flow_station_id = site_no)
-  na.omit()
-
+  na.omit()%>%
+  mutate(annual_median_TP_ugl = annual_median_TP*1000)%>%
+  mutate(q_m3s = flow_cfs /35.315)
+  
+##Transform Q from ft3s-1 in m3s-1 and then Pin=(somatP loads/somator Q)
 
 upstream_conc_hydro <- inner_join(hydrolakes_upstream_sites, phosphorus_conc_yrs, by="flow_station_id")%>%
-  mutate(annual_median_TP_ugl = annual_median_TP*1000)%>%
   group_by(flow_station_id, res_time_yr)%>%
-  select(flow_station_id, year, res_time_yr, annual_median_TP_ugl, station_id)
+  select(flow_station_id, year, res_time_yr, annual_median_TP_ugl, station_id, q_m3s)
+
+upstream_data <- upstream_conc_hydro%>%
+  group_by(station_id)
+  mutate(Pin = (sum(annual_median_TP_ugl)/(sum(q_m3s))))
 
 
 upstream_conc_hydro <- upstream_conc_hydro %>%
