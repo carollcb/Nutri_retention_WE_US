@@ -1,7 +1,8 @@
 ## Exploring groundwater data from LAGOS-GEO
 
-#groundwaterrecharge_mmperyr: mean within the zone of annual groundwater recharge calculated as baseflow multiplied by mean annual runoff; data from 1951 to 1980
 #baseflowindex_pct: mean within the zone of the percentage of streamflow that can be attributed to groundwater discharge into streams, calculated as baseflow divided by total flow; data from 1951 to 1980
+
+#groundwaterrecharge_mmperyr: mean within the zone of annual groundwater recharge calculated as baseflow multiplied by mean annual runoff; data from 1951 to 1980
 #runoff_inperyr: mean within the zone of annual runoff; data from 1951 to 1980
 
 library(tidyverse)
@@ -23,12 +24,12 @@ lagos_geo_groundw <- filter(lagos_geo_connect, variable_name %in% c("groundwater
 
 lagos_geo_groundw_area <-  inner_join(lagos_geo_groundw, lagos_hu12, by= "hu12_zoneid")
 
-
 lagos_geo_groundw_lagoslakeid <- inner_join(lagos_geo_groundw_area, d_mm, by= "hu12_zoneid")%>%
   select(lagoslakeid, lake_namelagos, lake_lat_decdeg, lake_lon_decdeg, lake_elevation_m, lake_centroidstate, variable_name, value, Shape_Area, hu12_zoneid)%>%
   mutate(lagoslakeid=as.character(lagoslakeid))%>%
   rename(area_huc12 = Shape_Area)
 
+#Looking baseflow
 baseflowindex_pct <- lagos_geo_groundw_lagoslakeid %>%
   group_by(lagoslakeid, variable_name, value) %>%
   filter(variable_name == "baseflowindex_pct")%>%
@@ -38,19 +39,31 @@ baseflowindex_pct <- lagos_geo_groundw_lagoslakeid %>%
 
 baseflowindex_pct_2 <- merge(baseflowindex_pct, lagos_lakearea)
 
+#Looking recharge
 groundwaterrecharge_mmperyr <- lagos_geo_groundw_lagoslakeid %>%
   group_by(lagoslakeid, variable_name, value) %>%
   filter(variable_name == "groundwaterrecharge_mmperyr")%>%
   rename(groundwaterrecharge_mmperyr = value)%>%
   select(lagoslakeid, groundwaterrecharge_mmperyr, area_huc12)%>%
   mutate(groundwaterrecharge_mmperyr=as.numeric(groundwaterrecharge_mmperyr))%>%
-  mutate(groundwaterrecharge_mperyr = groundwaterrecharge_mmperyr / 1000)%>%
-  mutate(Qgroundwaterrecarge_cubmperyr = area_huc12 * groundwaterrecharge_mperyr)
+  mutate(groundwaterrecharge_mperyr = groundwaterrecharge_mmperyr / 1000)
 
+runoff_inperyr <- lagos_geo_groundw_lagoslakeid %>%
+  group_by(lagoslakeid, variable_name, value) %>%
+  filter(variable_name == "runoff_inperyr")%>%
+  rename(runoff_inperyr = value)%>%
+  mutate(runoff_inperyr=as.numeric(runoff_inperyr))%>%
+  mutate(runoff_mperyr = runoff_inperyr / 39.37)%>%
+  select(lagoslakeid, runoff_mperyr)
+
+groundwater <- inner_join(groundwaterrecharge_mmperyr, runoff_inperyr, by="lagoslakeid")%>%
+  select(lagoslakeid, groundwaterrecharge_mperyr, runoff_mperyr, area_huc12)%>%
+  mutate(baseflow = groundwaterrecharge_mperyr/runoff_mperyr)%>%
+  mutate(Qbaseflow_cubmperyr = area_huc12 * baseflow)
 
 ###compare groundwaterrecharge_mmperyr$Qgroundwaterrecarge_cubmperyr with TN_loads_lagos$flowm3y
+list_files_TN <- paste0('data/results_TN/',list.files(path='data/results_TN/'),'/loadflex.csv')
 TN <- data.frame() # create empty dataframe
-
 
 for(c in 1:length(list_files_TN)) {
   tmp <- read.csv(list_files_TN[c]) |> # read in each csv
@@ -63,6 +76,9 @@ for(c in 1:length(list_files_TN)) {
 }
 
 
+upstream_sites_lagos <- read.csv("data/candidate_sites_TP_TN_Lagos_lakes.csv",
+                                 colClasses = "character",
+                                 stringsAsFactors = FALSE) ##Should we divide streamflow by gauges drainage area to compare? -> m/yr
 ##yearly loads data
 
 nitrogen_loads <- TN %>%
@@ -70,31 +86,33 @@ nitrogen_loads <- TN %>%
   rename(fluxTN_kgy = flux_kgy) 
 
 TN_loads_lagos <- inner_join(upstream_sites_lagos, nitrogen_loads , by= "station_id")%>%
-  dplyr::select(lake_namelagos, lagoslakeid, water_year, fluxTN_kgy, flow_m3y)
+  dplyr::select(lake_namelagos, lagoslakeid, water_year, fluxTN_kgy, flow_m3y, flow_station_area)
 
 TN_stream_loads <- TN_loads_lagos %>%
-  group_by(lagoslakeid, lake_namelagos) %>%
-  summarise(lt_flowcubmperyear = median(flow_m3y))
+  group_by(lagoslakeid, lake_namelagos, flow_station_area) %>%
+  summarise(lt_flowcubmperyear = median(flow_m3y))%>%
+  mutate(flow_station_area=as.numeric(flow_station_area))%>%
+  mutate(station_area_sqm = flow_station_area * 1000000)%>%
+  mutate(streamflow_mperyr = lt_flowcubmperyear/ station_area_sqm)
 
-loadsTN_lagos <- inner_join(groundwaterrecharge_mmperyr, TN_stream_loads, by="lagoslakeid")%>%
-  dplyr::select(lake_namelagos, lagoslakeid, lt_flowcubmperyear, Qgroundwaterrecarge_cubmperyr)%>%
-  mutate(groundwater_import = Qgroundwaterrecarge_cubmperyr - lt_flowcubmperyear)
-  #filter(groundwater_import <0)
 
-###25 lakes groundwater > streamflow, 15 lakes groundwater < streamflow
+loadsTN_lagos <- inner_join(groundwater, TN_stream_loads, by="lagoslakeid")%>%
+  dplyr::select(lake_namelagos, lagoslakeid, runoff_mperyr, baseflow, streamflow_mperyr)%>%
+  rename(baseflow_mperyr = baseflow)
+
+compare_columns <- function(data, col1, col2) {
+  result <- data %>%
+    mutate(groundwater_importance = .data[[col1]] > .data[[col2]])
+  return(result)
+}
+
+loadsTN_lagos <- compare_columns(loadsTN_lagos, "baseflow_mperyr", "streamflow_mperyr")
 
 ggplot()+ 
-  geom_boxplot(data=loadsTN_lagos, aes(x=Qgroundwaterrecarge_cubmperyr,y=lake_namelagos),color='red') + 
-  geom_boxplot(data=loadsTN_lagos, aes(x=lt_flowcubmperyear,y=lake_namelagos),color='blue') +
+  geom_boxplot(data=loadsTN_lagos, aes(x=baseflow_mperyr,y=lake_namelagos),color='red') + 
+  geom_boxplot(data=loadsTN_lagos, aes(x=streamflow_mperyr,y=lake_namelagos),color='blue') +
   ylab('Lake name')+xlab('Q (m3/s)')+
-  ggtitle("Flow influence in the lakes HUC12: Red (groundwater), Blue (streamflow)")
-
-##keeping checking from here!
-runoff_inperyr <- lagos_geo_groundw_lagoslakeid %>%
-  group_by(lagoslakeid, variable_name, value) %>%
-  filter(variable_name == "runoff_inperyr")%>%
-  rename(runoff_inperyr = value)%>%
-  select(lagoslakeid, runoff_inperyr, area_huc12)
+  ggtitle("Flow influence in the lakes HUC12: Red (baseflow), Blue (streamflow)")
 
 
 
@@ -102,16 +120,5 @@ runoff_inperyr <- lagos_geo_groundw_lagoslakeid %>%
 
 
 
-
-
-upstream_sites_lagos <- read.csv("data/candidate_sites_TP_TN_Lagos_lakes.csv",
-                                 colClasses = "character",
-                                 stringsAsFactors = FALSE
-) 
-
-baseflow_lagos <- inner_join(upstream_sites_lagos, baseflowindex_pct , by = "lagoslakeid")
-groundwaterrecharge_lagos <- inner_join(baseflow_lagos, groundwaterrecharge_mmperyr , by = "lagoslakeid")%>%
-  mutate(groundwaterrecharge_mmperyr= as.numeric(groundwaterrecharge_mmperyr))%>%
-  mutate(groundwaterrecharge_myr = groundwaterrecharge_mmperyr / 1000) ##multiply to huc12 area to get Q??
 
 
