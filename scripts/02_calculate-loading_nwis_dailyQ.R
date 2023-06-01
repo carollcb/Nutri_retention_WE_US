@@ -16,14 +16,15 @@ pb <- progress_bar$new(total = length(candidate_sites$sites),
                        width = 80, show_after = 0)
 
 for(site_no in candidate_sites$sites){
-  pb$tick(tokens = list(site_no = site_no))
   # site_no <- "05427718"
-  site_no <- candidate_sites$sites[2]
-
-  file_out <- paste0("data/results/", site_no, "/loadflex.csv")
+  # site_no <- candidate_sites$sites[1]
+  # pb$tick(tokens = list(site_no = site_no))
+  print(paste(which(candidate_sites$sites == site_no), 'out of',
+              nrow(candidate_sites), sep = ' '))
+  file_out <- paste0("data/results_new_Q/", site_no, "/loadflex.csv")
   if(!file.exists(file_out)){
 
-    file_in <- paste0("data/nwis_TP/", site_no, ".rds")
+    file_in <- paste0("data/new_Q_TP_TN/", site_no, ".rds")
     dt      <- readRDS(file_in)
     dt      <- dt %>% # resample to median values per day
       mutate(date = as.Date(strftime(dt$date_time, "%Y-%m-%d"))) %>%
@@ -32,71 +33,98 @@ for(site_no in candidate_sites$sites){
       data.frame()
     data <- dt
 
-    model_no <- selBestModel(
+    # Fit model for phosphorous
+    model_no_tp <- selBestModel(
       "phosphorus_mgl",
       data = data, flow = "flow_cfs",
       dates = "date_time", conc.units = "mg/L",
       station = site_no, time.step = "instantaneous")$model.no
     # print(paste0('best model = ',(model_no)))
-    data(Models); Models[model_no,]
+    data(Models); Models[model_no_tp,]
 
-    fit_reg2 <- suppressWarnings(suppressMessages(loadReg2(
+    fit_reg2_tp <- suppressWarnings(suppressMessages(loadReg2(
         loadReg(
-        as.formula(paste0("phosphorus_mgl ~ model(", model_no, ")")),
+        as.formula(paste0("phosphorus_mgl ~ model(", model_no_tp, ")")),
         data = data, flow = "flow_cfs", dates = "date",
         time.step = "day")
       )))
-    fit <- getFittedModel(fit_reg2)
+    fit_tp <- getFittedModel(fit_reg2_tp)
 
-    summarizeModel(fit)
-    fit$cfit$RSQ # cfit = concentration
-    fit$lfit$RSQ # lfit = load
+    summarizeModel(fit_tp)
+    fit_tp$cfit$RSQ # cfit = concentration
+    fit_tp$lfit$RSQ # lfit = load
 
-    # -----
-    # interpolate missing flow data to get an accurate load sum
-    new_dt <- data.frame(
-      date = seq(dt$date[which.min(dt$date)],
-                      dt$date[which.max(dt$date)],
-                      by = "day"))
-    new_dt <- left_join(new_dt, dt, by = "date")
+    # use complete flow data to get an accurate load sum
+    preds_tp <- predictSolute(fit_reg2_tp, newdata = data,
+                              flux.or.conc =  'flux', 
+                              date = TRUE, se.fit = TRUE)
+    # plot(preds$date, preds$flux, type='l', main = paste0('Model ', model_no))
+    
+    # Fit model for nitrogen
+    model_no_tn <- selBestModel(
+      "nitrogen_mgl",
+      data = data, flow = "flow_cfs",
+      dates = "date_time", conc.units = "mg/L",
+      station = site_no, time.step = "instantaneous")$model.no
+    # print(paste0('best model = ',(model_no)))
+    data(Models); Models[model_no_tn,]
 
-    flow_interp <- as_tsibble(new_dt, index = date) %>%
-      fabletools::model(arima = ARIMA(box_cox(flow_cfs, lambda = 0))) %>%
-      interpolate(as_tsibble(new_dt, index = date))
+    fit_reg2_tn <- suppressWarnings(suppressMessages(loadReg2(
+        loadReg(
+        as.formula(paste0("phosphorus_mgl ~ model(", model_no_tn, ")")),
+        data = data, flow = "flow_cfs", dates = "date",
+        time.step = "day")
+      )))
+    fit_tn <- getFittedModel(fit_reg2_tn)
 
-    plot(flow_interp$date, flow_interp$flow_cfs, col = "red", type = "l", log = 'y')
-    points(new_dt$date, new_dt$flow_cfs)
+    summarizeModel(fit_tn)
+    fit_tn$cfit$RSQ # cfit = concentration
+    fit_tn$lfit$RSQ # lfit = load
 
-    min(flow_interp$flow_cfs)
-
-    preds <- predictSolute(fit_reg2, newdata = flow_interp,
-                           flux.or.conc =  'flux', date = TRUE, se.fit = TRUE)
+    # use complete flow data to get an accurate load sum
+    preds_tn <- predictSolute(fit_reg2_tn, newdata = data,
+                              flux.or.conc =  'flux', 
+                              date = TRUE, se.fit = TRUE)
     # plot(preds$date, preds$flux, type='l', main = paste0('Model ', model_no))
 
     # get annual load, flow, concentration time series
-    tp_summary  <- data %>%
+    summary_dat  <- data %>%
       mutate(water_year = calcWaterYear(date)) %>%
       group_by(water_year) %>%
-      summarize(tp_mgl = mean(phosphorus_mgl, na.rm = TRUE)) %>%
+      summarize(tp_mgl = mean(phosphorus_mgl, na.rm = TRUE),
+                tn_mgl = mean(nitrogen_mgl, na.rm = TRUE)) %>%
       dplyr::filter(water_year >= 2000 & water_year <= 2018)
 
-    preds_annual <- left_join(preds, flow_interp, by = "date") %>%
+    preds <- rename(preds_tn,
+                    flux_TN = flux,
+                    se.flux_TN = se.fit) %>%
+      left_join(rename(preds_tp,
+                       flux_TP = flux,
+                       se.flux_TP = se.fit),
+                by = 'date')
+    preds_annual <- left_join(preds, data, by = "date") %>%
       # mutate(year = strftime(date, "%Y")) %>%
       mutate(water_year = calcWaterYear(date)) %>%
       group_by(water_year) %>%
-      summarize(flux_kgy = sum(flux),  # kg/yr
+      summarize(flux_TN_kgy = sum(flux_TN),  # kg/yr
+                flux_TP_kgy = sum(flux_TP),  # kg/yr
+                flux_TN_kgy_se = sum(se.flux_TN),
+                flux_TP_kgy_se = sum(se.flux_TP),
                 flow_m3y = mean(flow_cfs) * 893000.0741) %>%  # m3/yr
       dplyr::filter(water_year >= 2000 & water_year <= 2018) %>%
-      left_join(tp_summary, by = "water_year")
+      left_join(summary_dat, by = "water_year")
 
-    preds_annual$RSQ     <- fit$lfit$RSQ # lfit = load
-    preds_annual$p.value <- summarizeModel(fit)$p.value
-    preds_annual$RMSE    <- summarizeModel(fit)$RMSE
+    preds_annual$RSQ_TN     <- fit_tn$lfit$RSQ # lfit = load
+    preds_annual$p.value_TN <- summarizeModel(fit_tn)$p.value
+    preds_annual$RMSE_TN    <- summarizeModel(fit_tn)$RMSE
+    preds_annual$RSQ_TP     <- fit_tp$lfit$RSQ # lfit = load
+    preds_annual$p.value_TP <- summarizeModel(fit_tp)$p.value
+    preds_annual$RMSE_TP    <- summarizeModel(fit_tp)$RMSE
 
     # save preds_annual as data/results/{{site_no}}/loadflex.csv
-    dir.create(paste0("data/results/", site_no), showWarnings = FALSE, recursive = TRUE)
+    dir.create(paste0("data/results_new_Q/", site_no), showWarnings = FALSE, recursive = TRUE)
     write.csv(preds_annual,
-              paste0("data/results/", site_no, "/loadflex.csv"),
+              paste0("data/results_new_Q/", site_no, "/loadflex.csv"),
               row.names = FALSE)
   }
   read.csv(file_out, stringsAsFactors = FALSE)
