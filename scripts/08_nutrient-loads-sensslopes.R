@@ -10,7 +10,8 @@ library(ggpubr)
 library(sf)
 library(mapview)
 
-source("scripts/07_organizing-nutrient-loads-df.R")
+# source("scripts/07_organizing-nutrient-loads-df.R")
+source("scripts/07_organizing-nutrient-loads-df_newQ.R")
 
 #For TP loads
 TP_loads_ts <- phosphorus_loads %>%
@@ -85,11 +86,11 @@ nutrient_loads_unnested = unnest(nutrient_loads_nested, c(sens_sum, slope, nutri
 trending_sites <- nutrient_loads_unnested %>%
   ungroup() %>%
   filter(!Trend=="no trend") %>%
-  select(station_id, nutrient, slope, Trend)
+  dplyr::select(station_id, nutrient, slope, Trend)
 
 flux_slope_intercept <- nutrient_loads_unnested %>%
   filter(station_id %in% trending_sites$station_id) %>%
-  select(station_id, slope, intercept) %>%
+  dplyr::select(station_id, slope, intercept) %>%
   mutate(intercept=as.numeric(intercept)) %>%
   ungroup()
 
