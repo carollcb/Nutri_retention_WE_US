@@ -62,18 +62,23 @@ g1 <- ggplot(upstream_Nconc_hydro_lt, aes(x=fluxTN_gyr, y=Nret)) +
 #Plotting residence time (yr, y axis) x inflow P conc (x axis, µg l−1)
 
 #new calculus
+TP_data_test <- TNP %>%
+  rename(station_id = id)%>%
+  group_by(station_id, water_year) %>%
+  summarize(Pin_ugl = (flux_TP_kgy/flow_m3y)*1000000)
+
 TP_data_new <- nutrient_loads_lagos %>%
   group_by(flow_station_id) %>%
   summarize(Pin_ugl = sum(fluxTP_kgy)/sum(flow_m3y)*1000000)
  
-upstream_conc_hydro_final <- inner_join(hydrolakes_upstream_sites, TP_data_new, by="flow_station_id")%>%
-  group_by(flow_station_id, res_time_yr)%>%
-  select(flow_station_id, res_time_yr, Pin_ugl, station_id)%>%
+upstream_conc_hydro_final <- inner_join(hydrolakes_upstream_sites, TP_data_test, by="station_id")%>%
+  group_by(station_id, res_time_yr)%>%
+  select(station_id, res_time_yr, Pin_ugl, station_id, water_year)%>%
 mutate(Pret_coef = ((1-(1.43/Pin_ugl))*((Pin_ugl)/(1 + (res_time_yr^0.5)))^0.88))%>%
   na.omit() 
 
 #Hejzlar says this number is something between 0.02 and 0.96 -> check that!
-upstream_Pconc_hydro_nooutl <- upstream_conc_hydro_final[-6,]
+upstream_Pconc_hydro_nooutl <- upstream_conc_hydro_final[-(c(80,85)),]
 
 ggplot(upstream_Pconc_hydro_nooutl, aes(x=res_time_yr, y=Pret_coef)) +
   geom_point(size=2, shape=23)+
