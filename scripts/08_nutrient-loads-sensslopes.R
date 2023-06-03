@@ -14,13 +14,13 @@ library(mapview)
 source("scripts/07_organizing-nutrient-loads-df_newQ.R")
 
 #For TP loads
-TP_loads_ts <- phosphorus_loads %>%
+TP_loads_ts <- nutrient_loads_lagos %>%
   dplyr::select(station_id, water_year, fluxTP_kgy) %>%
   mutate(nutrient="TP") %>%
   rename(flux=fluxTP_kgy)
 
 #For TN loads
-TN_loads_ts <- nitrogen_loads %>%
+TN_loads_ts <- nutrient_loads_lagos %>%
   dplyr::select(station_id, water_year, fluxTN_kgy) %>%
   mutate(nutrient="TN") %>%
   rename(flux=fluxTN_kgy)
@@ -272,11 +272,6 @@ ts_trends_lakes_sp <- ts_trends_lakes %>%
   filter(!Trend=="no trend") 
 
 mapview(ts_trends_lakes_sp, zcol = "Trend") 
-
-ggplot()+
-  geom_sf(aes(color = Trend), data = ts_TPtrends_lakes_sp) +
-  geom_sf(aes(color = Trend), data = ts_TNtrends_lakes_sp) +
-  theme(legend.position="left")
 
 ##Comparing some LAGOS-Limno data and loads trends
 

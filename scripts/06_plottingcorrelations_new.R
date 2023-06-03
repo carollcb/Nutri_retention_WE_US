@@ -4,7 +4,9 @@ library(tidyverse)
 library(lubridate)
 library(mapview)
 library(tibble)
+library(patchwork)
 
+source("scripts/07_organizing-nutrient-loads-df_newQ.R")
 ## Loading data
 
 upstream_sites_lagos <- read.csv("data/candidate_sites_TP_TN_Lagos_lakes.csv",
@@ -36,11 +38,11 @@ hydrolakes_upstream_sites <- inner_join(upstream_sites_lagos, hydrolakes_lagos, 
  # data.table::rbindlist()%>%
 #  mutate(flow_station_id = as.character(flow_station_id))
 
-nitrogen_loads_lt <- TN_loads_lagos %>%
+nitrogen_loads_lt <- nutrient_loads_lagos %>%
   group_by(station_id) %>%
   summarise(lt_flux_kgy = median(fluxTN_kgy))
 
-P_discharge_lt <- TP_loads_lagos %>%
+P_discharge_lt <- nutrient_loads_lagos %>%
   group_by(flow_station_id) %>%
   summarise(lt_flow_m3y = median(flow_m3y))
 
@@ -52,73 +54,43 @@ upstream_Nconc_hydro_lt <- inner_join(hydrolakes_upstream_sites, nitrogen_loads_
   na.omit() %>%
   mutate(Nret = ((10^(1.00*(log(fluxTN_gyr/Dis_avg))- 0.39))/(Dis_avg)))
 
-ggplot(upstream_Nconc_hydro_lt, aes(x=fluxTN_gyr, y=Nret)) +
-  geom_point(size=2, shape=23)+
-  geom_smooth(method=lm)
-
-upstream_Nconc_hydro_lt_nooutl <- upstream_Nconc_hydro_lt[-15,]
-
-ggplot(upstream_Nconc_hydro_lt_nooutl, aes(x=fluxTN_gyr, y=Nret)) +
+g1 <- ggplot(upstream_Nconc_hydro_lt, aes(x=fluxTN_gyr, y=Nret)) +
   geom_point(size=2, shape=23)+
   geom_smooth(method=lm)
 
 ###--------Phosphorus ---------###
 #Plotting residence time (yr, y axis) x inflow P conc (x axis, µg l−1)
 
-phosphorus_conc_files <- list.files(path= "data/nwis_TP/",pattern = ".rds", full.names = T)%>%
-  map(readRDS) %>% 
-    data.table::rbindlist(fill=TRUE)%>%
-   mutate(phosphorus_mgl = as.numeric(phosphorus_mgl))%>%
-  rename(flow_station_id = site_no)
-
-phosphorus_conc_files$year <- year(phosphorus_conc_files$date_time)
-
-phosphorus_conc_yrs <- group_by(phosphorus_conc_files, 
-                          year, flow_station_id) %>%
-  dplyr::summarize(annual_median_TP = mean(phosphorus_mgl))#%>%
-  #rename(flow_station_id = site_no)
-
-phosphorus_conc_lt <- phosphorus_conc_yrs %>%
-  na.omit() %>%
-group_by(flow_station_id) %>%
-  dplyr::summarise(lt_median_tp = median(annual_median_TP))
-
-
-upstream_conc_hydro <- inner_join(hydrolakes_upstream_sites, phosphorus_conc_lt, by="flow_station_id")%>%
-  mutate(lt_median_TP_ugl = lt_median_tp*1000)%>%
-   group_by(flow_station_id, res_time_yr)%>%
-  select(flow_station_id, res_time_yr, lt_median_TP_ugl, station_id)
-
-#upstream_dis_con <- inner_join(upstream_conc_hydro, P_discharge_lt, by="flow_station_id")%>%
-#  mutate(Pin = lt_median_TP_ugl * lt_flow_m3y)
-
-upstream_conc_hydro <- upstream_conc_hydro %>%
-  mutate(Pret_coef = ((1-(1.43/lt_median_TP_ugl))*((lt_median_TP_ugl)/(1 + (res_time_yr^0.5)))^0.88))
-#Hejzlar says this number is something between 0.02 and 0.96 -> check that!
-
-#upstream_conc_hydro <- upstream_dis_con %>%
- # mutate(Pret_coef = ((1-(1.43/Pin))*((Pin)/(1 + (res_time_yr^0.5)))^0.88))
-
-ggplot(upstream_conc_hydro, aes(x=lt_median_TP_ugl, y=Pret_coef)) +
-  geom_point(size=2, shape=23)+
-  geom_smooth(method=lm)
-
-ggplot(upstream_conc_hydro, aes(x=res_time_yr, y=Pret_coef)) +
-  geom_point(size=2, shape=23)+
-  geom_smooth(method=lm)
-
-
-##P retention x P loads
-TP_loads <- TP %>%
+#new calculus
+TP_data_test <- TNP %>%
   rename(station_id = id)%>%
-  rename(fluxTP_kgy = flux_kgy) 
+  group_by(station_id, water_year) %>%
+  summarize(Pin_ugl = (flux_TP_kgy/flow_m3y)*1000000)
 
-P_loads_lt <- TP_loads %>%
+TP_data_new <- nutrient_loads_lagos %>%
+  group_by(flow_station_id) %>%
+  summarize(Pin_ugl = sum(fluxTP_kgy)/sum(flow_m3y)*1000000)
+ 
+upstream_conc_hydro_final <- inner_join(hydrolakes_upstream_sites, TP_data_test, by="station_id")%>%
+  group_by(station_id, res_time_yr)%>%
+  select(station_id, res_time_yr, Pin_ugl, station_id, water_year)%>%
+mutate(Pret_coef = ((1-(1.43/Pin_ugl))*((Pin_ugl)/(1 + (res_time_yr^0.5)))^0.88))%>%
+  na.omit() 
+
+#Hejzlar says this number is something between 0.02 and 0.96 -> check that!
+upstream_Pconc_hydro_nooutl <- upstream_conc_hydro_final[-(c(80,85)),]
+
+ggplot(upstream_Pconc_hydro_nooutl, aes(x=res_time_yr, y=Pret_coef)) +
+  geom_point(size=2, shape=23)+
+  geom_smooth(method=lm)
+
+
+P_loads_lt <- nutrient_loads_lagos %>%
   group_by(station_id) %>%
   summarise(lt_flux_kgy = median(fluxTP_kgy))
 
 
-upstream_Pconc_hydro_lt <- inner_join(upstream_conc_hydro, P_loads_lt, by="station_id")%>%
+upstream_Pconc_hydro_lt <- inner_join(upstream_Pconc_hydro_nooutl, P_loads_lt, by="station_id")%>%
   mutate(fluxTP_gyr = lt_flux_kgy/1000)%>%
   group_by(station_id)%>%
   select(station_id, Pret_coef, fluxTP_gyr)%>%
