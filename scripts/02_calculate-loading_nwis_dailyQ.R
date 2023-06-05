@@ -7,7 +7,7 @@ candidate_sites <- read.csv("data/candidate_sites_TP_TN_Lagos_lakes.csv",
   dplyr::select(station_id, flow_station_id) %>%
   rename(sites = station_id) 
 
-
+# rerun = TRUE
 #write.csv(candidate_sites, "upstream_gauges_final.csv")
 
 pb <- progress_bar$new(total = length(candidate_sites$sites),
@@ -22,7 +22,7 @@ for(site_no in candidate_sites$sites){
   print(paste(which(candidate_sites$sites == site_no), 'out of',
               nrow(candidate_sites), sep = ' '))
   file_out <- paste0("data/results_new_Q/", site_no, "/loadflex.csv")
-  if(!file.exists(file_out)){
+   if(!file.exists(file_out) | rerun){
 
     file_in <- paste0("data/new_Q_TP_TN/", site_no, ".rds")
     dt      <- readRDS(file_in)
@@ -54,11 +54,21 @@ for(site_no in candidate_sites$sites){
     fit_tp$cfit$RSQ # cfit = concentration
     fit_tp$lfit$RSQ # lfit = load
 
+    # interpolate missing flow data to get an accurate load sum
+    new_dt <- data.frame(
+      date = seq(dt$date[which.min(dt$date)],
+                 dt$date[which.max(dt$date)],
+                 by = "day"))
+    new_dt <- left_join(new_dt, dt, by = "date")
+    
+    flow_interp <- as_tsibble(new_dt, index = date) %>%
+      fabletools::model(arima = ARIMA(box_cox(flow_cfs, lambda = 0))) %>%
+      interpolate(as_tsibble(new_dt, index = date))
+
     # use complete flow data to get an accurate load sum
-    preds_tp <- predictSolute(fit_reg2_tp, newdata = data,
+    preds_tp <- predictSolute(fit_reg2_tp, newdata = flow_interp,
                               flux.or.conc =  'flux', 
                               date = TRUE, se.fit = TRUE)
-    # plot(preds$date, preds$flux, type='l', main = paste0('Model ', model_no))
     
     # Fit model for nitrogen
     model_no_tn <- selBestModel(
@@ -80,13 +90,23 @@ for(site_no in candidate_sites$sites){
     summarizeModel(fit_tn)
     fit_tn$cfit$RSQ # cfit = concentration
     fit_tn$lfit$RSQ # lfit = load
-
+    
     # use complete flow data to get an accurate load sum
-    preds_tn <- predictSolute(fit_reg2_tn, newdata = data,
+    preds_tn <- predictSolute(fit_reg2_tn, newdata = flow_interp,
                               flux.or.conc =  'flux', 
                               date = TRUE, se.fit = TRUE)
-    # plot(preds$date, preds$flux, type='l', main = paste0('Model ', model_no))
-
+    
+    # plot model for checking
+    png(paste0('figures/Model_checks/', site_no, '.png'))
+      par(mfrow = c(3,1), mar = c(3,5,2,1))
+      plot(flow_interp$date, flow_interp$flow_cfs, col = "red", type = "l",
+           main = paste0('Model for site no ', site_no), ylab = 'Flow cfs')
+      points(new_dt$date, new_dt$flow_cfs)
+      legend('topright', legend = c('measured', 'interpolated'), pch = c(1, NA),
+             lty = c(NA, 1), col = c('black', 'red'))
+      plot(preds_tn$date, preds_tn$flux, type='l', ylab = 'Nitrogen')
+      plot(preds_tp$date, preds_tp$flux, type='l', ylab = 'Phosphorus')
+    dev.off()
     # get annual load, flow, concentration time series
     summary_dat  <- data %>%
       mutate(water_year = calcWaterYear(date)) %>%
