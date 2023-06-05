@@ -7,6 +7,7 @@
 
 library(tidyverse)
 library(sf)
+library(mapview)
 
 source("scripts/LAGOS_EDI.R")
 source("scripts/LAGOS_EDI_characteristics.R")
@@ -116,9 +117,26 @@ ggplot()+
 
 
 
+## checking Alice's idea: rel_area = lake catchment (ws)/outlet watershed area (nws)
+#I've done the overlap analysis in QGis
+#From LAGOS-US data: 
+
+ws_nws_overlap <- st_read("D:/Datasets/Datasets/LAGOS-US/ws_nws_overlap.shp")%>%
+  rename(lagoslakeid = lagoslakei, overl_area = lagos_ws_1)%>%
+  mutate(lagoslakeid= as.character(lagoslakeid))
 
 
+upstream_sites_lagos <- read.csv("data/candidate_sites_TP_TN_Lagos_lakes.csv",
+                                 colClasses = "character",
+                                 stringsAsFactors = FALSE) 
 
 
+sites_overlap <- inner_join(ws_nws_overlap, upstream_sites_lagos, by="lagoslakeid")%>%
+  mutate(overl_area_final = 100 - overl_area)%>%
+  select(lagoslakeid, Shape_Leng, Shape_Area, overl_area_final, lon, lat, lake_namelagos)%>%
+  mutate(groundw_import = overl_area_final >= 50)
 
+mapview(sites_overlap, zcol = "groundw_import") #28/40 (70% of our sites): >80% of the sites with available data don't have high groundwater contribution
 
+sites_groundwater_import <- sites_overlap %>%
+  filter(groundw_import == "TRUE") 
