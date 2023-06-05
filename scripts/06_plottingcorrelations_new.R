@@ -50,7 +50,7 @@ P_discharge_lt <- nutrient_loads_lagos %>%
 upstream_Nconc_hydro_lt <- inner_join(hydrolakes_upstream_sites, nitrogen_loads_lt, by="station_id")%>%
   mutate(fluxTN_gyr = lt_flux_kgy/1000)%>%
   group_by(station_id, Dis_avg)%>%
-  select(station_id, Dis_avg, fluxTN_gyr)%>%
+  dplyr::select(station_id, Dis_avg, fluxTN_gyr)%>%
   na.omit() %>%
   mutate(Nret = ((10^(1.00*(log(fluxTN_gyr/Dis_avg))- 0.39))/(Dis_avg)))
 
@@ -73,14 +73,14 @@ TP_data_new <- nutrient_loads_lagos %>%
  
 upstream_conc_hydro_final <- inner_join(hydrolakes_upstream_sites, TP_data_test, by="station_id")%>%
   group_by(station_id, res_time_yr)%>%
-  select(station_id, res_time_yr, Pin_ugl, station_id, water_year)%>%
+  dplyr::select(station_id, res_time_yr, Pin_ugl, station_id, water_year)%>%
 mutate(Pret_coef = ((1-(1.43/Pin_ugl))*((Pin_ugl)/(1 + (res_time_yr^0.5)))^0.88))%>%
   na.omit() 
 
 #Hejzlar says this number is something between 0.02 and 0.96 -> check that!
-upstream_Pconc_hydro_nooutl <- upstream_conc_hydro_final[-(c(80,85)),]
+#upstream_Pconc_hydro_nooutl <- upstream_conc_hydro_final[-(c(80,85)),]
 
-ggplot(upstream_Pconc_hydro_nooutl, aes(x=res_time_yr, y=Pret_coef)) +
+ggplot(upstream_conc_hydro_final, aes(x=res_time_yr, y=Pret_coef)) +
   geom_point(size=2, shape=23)+
   geom_smooth(method=lm)
 
@@ -90,10 +90,10 @@ P_loads_lt <- nutrient_loads_lagos %>%
   summarise(lt_flux_kgy = median(fluxTP_kgy))
 
 
-upstream_Pconc_hydro_lt <- inner_join(upstream_Pconc_hydro_nooutl, P_loads_lt, by="station_id")%>%
+upstream_Pconc_hydro_lt <- inner_join(upstream_conc_hydro_final, P_loads_lt, by="station_id")%>%
   mutate(fluxTP_gyr = lt_flux_kgy/1000)%>%
   group_by(station_id)%>%
-  select(station_id, Pret_coef, fluxTP_gyr)%>%
+  dplyr::select(station_id, Pret_coef, fluxTP_gyr)%>%
   na.omit() 
 
 g2 <- ggplot(upstream_Pconc_hydro_lt, aes(x=fluxTP_gyr, y=Pret_coef)) +

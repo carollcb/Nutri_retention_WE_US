@@ -27,7 +27,7 @@ hydrol_us <- st_read("shps/joined_hydrolakes_lagos.shp")
 hydrol_tot <- as.data.frame(hydrol_us)
 
 ts_hydro_us <- inner_join(dt1, hydrol_tot, by="Hylak_id")%>%
-  select(Hylak_id,lagoslakei, year, categorical_ts, Lake_name, Pour_long, Pour_lat)%>%
+  dplyr::select(Hylak_id,lagoslakei, year, categorical_ts, Lake_name, Pour_long, Pour_lat)%>%
   rename(lagoslakeid = lagoslakei, water_year = year)%>%
   mutate(lagoslakeid = as.character(lagoslakeid))
   #st_as_sf(coords= c("Pour_long", "Pour_lat"), crs= 4326)
@@ -42,8 +42,11 @@ by(Nretention_ts,factor(Nretention_ts$categorical_ts),summary)
 g1 <- ggplot(Nretention_ts, aes(y=TN_removal_gNm2yr, x=categorical_ts)) +
   geom_boxplot(aes(fill = categorical_ts), outlier.shape = NA)  + geom_jitter(height = 0, width = 0.1)+
   scale_y_continuous(limits = quantile(Nretention_ts$TN_removal_gNm2yr, c(0.1, 0.9)))+
-  ggtitle("N removal in gNm-2yr-1 based on lakes and reservoirs trophic state")+
+  scale_fill_manual(values=c("#009E73", "#56B4E9")) +
+  ggtitle("Nremoval (gNm-2yr-1) based on ts")+
   theme_bw()
+
+#ggsave("figures/TN_retention_lakes-trophic-state.png", width=8, height=6,units="in", dpi=300)
 
 Nretention_ts_sp <- Nretention_ts%>%
   st_as_sf(coords= c("lake_lon_decdeg", "lake_lat_decdeg"), crs= 4326)
@@ -68,7 +71,7 @@ upstream_sites_lagos <- read.csv("data/candidate_sites_TP_TN_Lagos_lakes.csv",
 Pretention_lakes <- left_join(upstream_sites_lagos, upstream_Pconc_hydro_nooutl, by= "station_id")%>%
   #rename(water_year = year)%>%
   mutate(Pret_coef=as.numeric(Pret_coef))%>%
-  select(lagoslakeid, Pret_coef, Pin_ugl)%>% 
+  dplyr::select(lagoslakeid, Pret_coef, Pin_ugl)%>% 
   #rename(flow_station_id = site_no)
   na.omit()
 
@@ -79,8 +82,10 @@ by(Pretention_ts,factor(Pretention_ts$categorical_ts),summary)
 
 g2 <- ggplot(Pretention_ts, aes(y=Pret_coef, x=categorical_ts)) +
   geom_boxplot(aes(fill = categorical_ts), outlier.shape = NA)  + geom_jitter(height = 0, width = 0.1)+
-  #scale_y_continuous(limits = quantile(Pretention_ts$Pret_coef, c(0.1, 0.9)))+
-  ggtitle("P retention coeficient based on lakes and reservoirs trophic state")+
+  scale_y_continuous(limits = quantile(Pretention_ts$Pret_coef, c(0.1, 0.9)))+
+  scale_fill_manual(values=c("#D55E00", "#009E73", "#56B4E9")) +
+  ggtitle("Pretention coeficient based on ts")+
   theme_bw()
 
 g1 + g2
+ggsave("figures/N-P-retention-TS.png", width=8, height=6,units="in", dpi=300)

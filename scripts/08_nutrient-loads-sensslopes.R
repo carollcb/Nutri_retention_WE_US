@@ -246,25 +246,25 @@ max_TPloads <- max(max_TP$flux)
 ts_TNtrends_lakes <- left_join(upstream_sites_lagos, nutrient_loads_unnested, by="station_id")%>%
     filter(nutrient=="TN") %>%
   group_by(lagoslakeid) %>%
-  select(lake_namelagos, lagoslakeid, Trend, lon, lat)%>%
+  dplyr::select(lake_namelagos, lagoslakeid, Trend, lon, lat)%>%
   distinct()%>%
   na.omit() 
 
 ts_TPtrends_lakes <- left_join(upstream_sites_lagos, nutrient_loads_unnested, by="station_id")%>%
   filter(nutrient=="TP") %>%
   group_by(lagoslakeid) %>%
-  select(station_id, lake_namelagos, lagoslakeid, Trend, lon, lat)%>%
+  dplyr::select(station_id, lake_namelagos, lagoslakeid, Trend, lon, lat)%>%
   distinct()%>%
   na.omit() 
 
 ts_trends_lakes <- left_join(upstream_sites_lagos, nutrient_loads_unnested, by="station_id")%>%
   group_by(lagoslakeid) %>%
-  select(lake_namelagos, lagoslakeid, Trend, lon, lat)%>%
+  dplyr::select(lake_namelagos, lagoslakeid, Trend, lon, lat)%>%
   distinct()%>%
   na.omit() 
 
-filter(ts_TNtrends_lakes, Trend == "no trend")
-filter(ts_TPtrends_lakes, Trend == "no trend")
+filter(ts_TNtrends_lakes, Trend == "decreasing")
+filter(ts_TPtrends_lakes, Trend == "decreasing")
 
 ts_trends_lakes_sp <- ts_trends_lakes %>%
                st_as_sf( coords= c("lon", "lat"),
