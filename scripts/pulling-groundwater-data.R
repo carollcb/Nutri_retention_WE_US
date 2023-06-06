@@ -140,3 +140,32 @@ mapview(sites_overlap, zcol = "groundw_import") #28/40 (70% of our sites): >80% 
 
 sites_groundwater_import <- sites_overlap %>%
   filter(groundw_import == "TRUE") 
+
+sites_groundwater_noimport <- sites_overlap %>%
+  filter(groundw_import == "FALSE") 
+
+upstream_sites_sp <- upstream_sites_lagos %>%
+  st_as_sf(coords = c(x="lon", y="lat"), crs=4326)
+
+mapview(sites_overlap, zcol = "groundw_import") + mapview(upstream_sites_sp)
+
+#testing
+lagos_watersh <- read.csv("C:/Users/cbarbosa/Documents/lake_watersheds.csv")%>%
+  select(lagoslakeid, ws_area_ha, nws_area_ha, ws_lat_decdeg,ws_lon_decdeg, nws_lat_decdeg,nws_lon_decdeg)%>%
+  mutate(lagoslakeid=as.character(lagoslakeid))%>%
+  mutate(drain_lake_ratio = (1 - (ws_area_ha/nws_area_ha)))
+
+new_sites_overlap <- inner_join(lagos_watersh,upstream_sites_lagos, by="lagoslakeid" )
+
+ggplot(new_sites_overlap, aes(x=drain_lake_ratio)) +
+  geom_histogram(binwidth=.5, colour="black", fill="white")
+
+
+
+
+new_sites_overlap <- new_sites_overlap %>%
+  select(lagoslakeid, rel_area)%>%
+  mutate(groundw_import = rel_area > 0.5)
+
+sites_groundwater_noimport_new <- new_sites_overlap %>%
+  filter(groundw_import == "FALSE")
