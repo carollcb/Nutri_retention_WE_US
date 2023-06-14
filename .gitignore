@@ -11,6 +11,7 @@ hydrolakes_NA.shx
 /ignore_shps
 /shps/joined_hydrolakes_lagos.shp
 /shps/hydrolakes_lagos_merged.shp
+/shps/joined_hydrolakes_lagos_Final.shp
 
 #Ignore LAGOS info
 /data/lagos_dataset_info.csv
