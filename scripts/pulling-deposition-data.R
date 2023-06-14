@@ -4,6 +4,7 @@ library(tidyverse)
 
 source("scripts/LAGOS_EDI.R")
 source("scripts/07_organizing-nutrient-loads-df_newQ.R")
+source("scripts/08_nutrient-loads-sensslopes.R")
 
 #lagos_hu12 <- st_read('D:/Datasets/Datasets/LAGOS_GEO/gis_geo_v1.0.gpkg', layer="hu12")%>%
  # rename(zoneid = hu12_zoneid)
@@ -23,19 +24,11 @@ atm_depos_N_final <- inner_join(atm_depos_N, d_mm, by= "hu12_zoneid")%>%
 
 ##TN stream loads
 
-upstream_sites_lagos <- read.csv("data/candidate_sites_TP_TN_Lagos_lakes.csv",
+upstream_sites_lagos <- read.csv("data/upstream_sites_final.csv",
                                  colClasses = "character",
                                  stringsAsFactors = FALSE
 ) 
 
-
-##yearly loads data
-
-nitrogen_loads <- TNP %>%
-  rename(station_id = id)
-
-TN_loads_lagos <- inner_join(upstream_sites_lagos, nitrogen_loads , by= "station_id")%>%
-  dplyr::select(lagoslakeid, water_year, flux_TN_kgy)
 
 ##filtering only study sites 
 
@@ -44,6 +37,7 @@ atm_depos_N_lakes <- left_join(upstream_sites_lagos, atm_depos_N_final, by= "lag
   mutate(totaldepnitrogen_kgperha=as.numeric(totaldepnitrogen_kgperha))%>%
   dplyr::select(lagoslakeid, water_year, totaldepnitrogen_kgperha, lake_lon_decdeg, lake_lat_decdeg)
 
-total_Nload <- merge(atm_depos_N_lakes , TN_loads_lagos)%>%
-  mutate(totTNload_gm2yr = ((totaldepnitrogen_kgperha + flux_TN_kgy)*0.1))
+total_Nload <- merge(atm_depos_N_lakes , TN_loads_ts)%>%
+  select(lagoslakeid, water_year, totaldepnitrogen_kgperha, flux, lake_lon_decdeg, lake_lat_decdeg)%>%
+  mutate(totTNload_gm2yr = ((totaldepnitrogen_kgperha + flux)*0.1))
 

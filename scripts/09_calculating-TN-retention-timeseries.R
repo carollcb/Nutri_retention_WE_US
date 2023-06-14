@@ -13,6 +13,8 @@ library(patchwork)
 Nretention <- total_Nload %>%
   mutate(TN_removal_gNm2yr =(10^(-0.27 + (0.82 * log(totTNload_gm2yr)))))
 
+write.csv(Nretention, "data/Nretention_df.csv")
+
 Nretention_sp <- Nretention %>%
   st_as_sf(coords= c("lake_lon_decdeg", "lake_lat_decdeg"), crs= 4326)
 
@@ -22,7 +24,7 @@ ggplot(Nretention_sp, aes(x=totTNload_gm2yr, y=TN_removal_gNm2yr)) +
 
 ##----Merging Hydrolakes coord and Meyer et 2023 dataset
 #hydrol_us <- st_read("D:/Datasets/Datasets/HydroLAKES_polys_v10_shp/HydroLAKES_polys_v10.shp")
-hydrol_us <- st_read("shps/joined_hydrolakes_lagos.shp")
+hydrol_us <- st_read("shps/joined_hydrolakes_lagos_Final.shp")
 
 hydrol_tot <- as.data.frame(hydrol_us)
 
@@ -61,21 +63,9 @@ Nretention_ts_sp <- Nretention_ts%>%
  # scale_size(breaks=c(10000,1000000, 1000000000),guide="legend")
 
 ####-----Calculating TP retention coefficient time-series and merging with trophic state dataset
-upstream_sites_lagos <- read.csv("data/candidate_sites_TP_TN_Lagos_lakes.csv",
-                                 colClasses = "character",
-                                 stringsAsFactors = FALSE
-)
-
 
 #Merging with ts data 
-Pretention_lakes <- left_join(upstream_sites_lagos, upstream_Pconc_hydro_nooutl, by= "station_id")%>%
-  #rename(water_year = year)%>%
-  mutate(Pret_coef=as.numeric(Pret_coef))%>%
-  dplyr::select(lagoslakeid, Pret_coef, Pin_ugl)%>% 
-  #rename(flow_station_id = site_no)
-  na.omit()
-
-Pretention_ts <- merge(Pretention_lakes, ts_hydro_us)%>%
+Pretention_ts <- merge(upstream_Pconc_hydro_lt, ts_hydro_us)%>%
   na.omit()
 
 by(Pretention_ts,factor(Pretention_ts$categorical_ts),summary)
@@ -83,9 +73,22 @@ by(Pretention_ts,factor(Pretention_ts$categorical_ts),summary)
 g2 <- ggplot(Pretention_ts, aes(y=Pret_coef, x=categorical_ts)) +
   geom_boxplot(aes(fill = categorical_ts), outlier.shape = NA)  + geom_jitter(height = 0, width = 0.1)+
   scale_y_continuous(limits = quantile(Pretention_ts$Pret_coef, c(0.1, 0.9)))+
-  scale_fill_manual(values=c("#D55E00", "#009E73", "#56B4E9")) +
+  scale_fill_manual(values=c("#009E73", "#56B4E9")) +
   ggtitle("Pretention coeficient based on ts")+
   theme_bw()
 
 g1 + g2
 ggsave("figures/N-P-retention-TS.png", width=8, height=6,units="in", dpi=300)
+
+##Saving Final file
+test <- test %>%
+  select(water_year, lagoslakeid,  res_time_yr, total_Pin_ugl, totTNload_gm2yr, TN_removal_gNm2yr, Pret_coef, lake_lon_decdeg, lake_lat_decdeg)
+
+test_sp <- test %>%  
+  st_as_sf(coords= c("lake_lon_decdeg", "lake_lat_decdeg"), crs= 4326)
+
+#write.csv(test, "data/final_retention_dataset.csv")
+library(plainview)
+
+# mapview + object
+mapview(test_sp, zcol="TN_removal_gNm2yr", at = seq(0, 242094243, 5000), legend = TRUE) 

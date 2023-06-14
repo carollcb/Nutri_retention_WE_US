@@ -21,7 +21,7 @@ upstream_sites_lagos <- read.csv("data/upstream_sites_final.csv",
 
 
 #I merged hydrolakes and LAGOS in QGis - not sure if it worked well. Maybe repeat this step!
-hydrolakes_lagos <- st_read("shps/joined_hydrolakes_lagos.shp") %>% 
+hydrolakes_lagos <- st_read("shps/joined_hydrolakes_lagos_Final.shp") %>% 
   rename(lagoslakeid = lagoslakei)%>%
   mutate(lagoslakeid = as.character(lagoslakeid))%>%
   mutate(res_time_yr = Res_time/365)
@@ -46,17 +46,18 @@ P_discharge_lt <- nutrient_loads_lagos %>%
   group_by(flow_station_id) %>%
   summarise(lt_flow_m3y = median(flow_m3y))
 
-#long-term values?
-upstream_Nconc_hydro_lt <- inner_join(hydrolakes_upstream_sites, nitrogen_loads_lt, by="station_id")%>%
-  mutate(fluxTN_gyr = lt_flux_kgy/1000)%>%
-  group_by(station_id, Dis_avg)%>%
-  dplyr::select(station_id, Dis_avg, fluxTN_gyr)%>%
-  na.omit() %>%
-  mutate(Nret = ((10^(1.00*(log(fluxTN_gyr/Dis_avg))- 0.39))/(Dis_avg)))
+##long-term values?
+#upstream_Nconc_hydro_lt <- inner_join(hydrolakes_upstream_sites, nitrogen_loads_lt, by="station_id")%>%
+ # group_by(lagoslakeid, Dis_avg)%>%
+ # summarise(total_lt_flux_kgy = sum(lt_flux_kgy))%>%
+#mutate(fluxTN_gyr = total_lt_flux_kgy/1000)%>%
+ # na.omit()%>%
+  #mutate(Nret = ((10^(1.00*(log(fluxTN_gyr/Dis_avg))- 0.39))/(Dis_avg)))
+  
 
-g1 <- ggplot(upstream_Nconc_hydro_lt, aes(x=fluxTN_gyr, y=Nret)) +
-  geom_point(size=2, shape=23)+
-  geom_smooth(method=lm)
+#g1 <- ggplot(upstream_Nconc_hydro_lt, aes(x=total_lt_flux_kgy, y=Nret)) +
+#  geom_point(size=2, shape=23)+
+#  geom_smooth(method=lm)
 
 ###--------Phosphorus ---------###
 #Plotting residence time (yr, y axis) x inflow P conc (x axis, µg l−1)
@@ -73,31 +74,37 @@ TP_data_new <- nutrient_loads_lagos %>%
  
 upstream_conc_hydro_final <- inner_join(hydrolakes_upstream_sites, TP_data_test, by="station_id")%>%
   group_by(station_id, res_time_yr)%>%
-  dplyr::select(station_id, res_time_yr, Pin_ugl, station_id, water_year)%>%
-mutate(Pret_coef = ((1-(1.43/Pin_ugl))*((Pin_ugl)/(1 + (res_time_yr^0.5)))^0.88))%>%
-  na.omit() 
+  dplyr::select(lagoslakeid, res_time_yr, Pin_ugl, water_year)
 
 #Hejzlar says this number is something between 0.02 and 0.96 -> check that!
 #upstream_Pconc_hydro_nooutl <- upstream_conc_hydro_final[-(c(80,85)),]
 
-ggplot(upstream_conc_hydro_final, aes(x=res_time_yr, y=Pret_coef)) +
-  geom_point(size=2, shape=23)+
-  geom_smooth(method=lm)
-
-
 P_loads_lt <- nutrient_loads_lagos %>%
-  group_by(station_id) %>%
+  group_by(lagoslakeid, water_year) %>%
   summarise(lt_flux_kgy = median(fluxTP_kgy))
 
 
-upstream_Pconc_hydro_lt <- inner_join(upstream_conc_hydro_final, P_loads_lt, by="station_id")%>%
-  mutate(fluxTP_gyr = lt_flux_kgy/1000)%>%
-  group_by(station_id)%>%
-  dplyr::select(station_id, Pret_coef, fluxTP_gyr)%>%
+upstream_Pconc_hydro_lt <- merge(upstream_conc_hydro_final, P_loads_lt)%>%
+  group_by(lagoslakeid, water_year,res_time_yr )%>%
+  summarise(total_Pin_ugl = sum(Pin_ugl))%>%
+  #mutate(fluxTP_gyr = total_lt_flux_kgy/1000)%>%
+  #na.omit() %>%
+  mutate(Pret_coef = ((1-(1.43/total_Pin_ugl))*((total_Pin_ugl)/(1 + (res_time_yr^0.5)))^0.88))%>%
   na.omit() 
 
-g2 <- ggplot(upstream_Pconc_hydro_lt, aes(x=fluxTP_gyr, y=Pret_coef)) +
+#write.csv(upstream_Pconc_hydro_lt, "data/Pretention_df.csv")
+
+ggplot(upstream_Pconc_hydro_lt, aes(x=res_time_yr, y=Pret_coef)) +
   geom_point(size=2, shape=23)+
   geom_smooth(method=lm)
+
+
+g2 <- ggplot(upstream_Pconc_hydro_lt, aes(x=total_Pin_ugl, y=Pret_coef)) +
+  geom_point(size=2, shape=23)+
+  geom_smooth(method=lm)
+
+g1 <- ggplot(Nretention_ts, aes(x=totTNload_gm2yr, y=TN_removal_gNm2yr)) +
+    geom_point(size=2, shape=23)+
+    geom_smooth(method=lm)
 
 g1 + g2  ##check with the group -> accord Hejzlar those should be something between 0.02 and 0.96

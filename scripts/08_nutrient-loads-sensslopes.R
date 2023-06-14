@@ -12,22 +12,31 @@ library(mapview)
 
 # source("scripts/07_organizing-nutrient-loads-df.R")
 source("scripts/07_organizing-nutrient-loads-df_newQ.R")
+source("scripts/LAGOS_EDI.R")
 
 #For TP loads
 TP_loads_ts <- nutrient_loads_lagos %>%
-  dplyr::select(station_id, water_year, fluxTP_kgy) %>%
+  group_by(lagoslakeid, water_year)%>%
+  dplyr::mutate(total_fluxTP_kgy = sum(fluxTP_kgy))%>%
+  dplyr::select(station_id, lagoslakeid, water_year, total_fluxTP_kgy) %>%
   mutate(nutrient="TP") %>%
-  rename(flux=fluxTP_kgy)
+  rename(flux=total_fluxTP_kgy)%>%
+  drop_na()
+
 
 #For TN loads
 TN_loads_ts <- nutrient_loads_lagos %>%
-  dplyr::select(station_id, water_year, fluxTN_kgy) %>%
+  group_by(lagoslakeid, water_year)%>%
+  dplyr::mutate(total_fluxTN_kgy = sum(fluxTN_kgy))%>%
+  dplyr::select(station_id, lagoslakeid, water_year, total_fluxTN_kgy) %>%
   mutate(nutrient="TN") %>%
-  rename(flux=fluxTN_kgy)
+  rename(flux=total_fluxTN_kgy)%>%
+  drop_na()
+
 
 #All loads
 all_loads_ts <- bind_rows(TP_loads_ts, TN_loads_ts) %>%
-  group_by(station_id, nutrient) %>%
+  group_by(station_id, lagoslakeid, nutrient) %>%
   add_count() %>%
   filter(n>=10) #exclude sites with less than 10 years of data
 
@@ -58,7 +67,7 @@ sens_intercept <- function(mod) {
 
 ## Trends in TN and TP
 nutrient_loads_nested <- all_loads_ts %>%
-  group_by(station_id, nutrient) %>%
+  group_by(lagoslakeid, nutrient) %>%
   nest() %>%
   mutate(
     sens = map(data, map_sens),
@@ -86,27 +95,27 @@ nutrient_loads_unnested = unnest(nutrient_loads_nested, c(sens_sum, slope, nutri
 trending_sites <- nutrient_loads_unnested %>%
   ungroup() %>%
   filter(!Trend=="no trend") %>%
-  dplyr::select(station_id, nutrient, slope, Trend)
+  dplyr::select(lagoslakeid, nutrient, slope, Trend)
 
 flux_slope_intercept <- nutrient_loads_unnested %>%
-  filter(station_id %in% trending_sites$station_id) %>%
-  dplyr::select(station_id, slope, intercept) %>%
+  filter(lagoslakeid %in% trending_sites$lagoslakeid) %>%
+  dplyr::select(lagoslakeid, slope, intercept) %>%
   mutate(intercept=as.numeric(intercept)) %>%
   ungroup()
 
 #Plot them together
 ggplot() +
   geom_point(data = all_loads_ts %>%
-               filter(station_id %in% trending_sites$station_id),
+               filter(lagoslakeid %in% trending_sites$lagoslakeid),
              aes(y = flux, x=water_year, fill=nutrient),
              col = "black", shape=21)+
-  facet_wrap(nutrient~station_id, scales="free")  +
-  # facet_grid(station_id~nutrient, scales = "free_y") + #You might like the facet_wrap version better
+  facet_wrap(nutrient~lagoslakeid, scales="free")  +
+  # facet_grid(lagoslakeid~nutrient, scales = "free_y") + #You might like the facet_wrap version better
   geom_abline(flux_slope_intercept,
-              mapping=aes(intercept = intercept, slope = slope, group=station_id,
+              mapping=aes(intercept = intercept, slope = slope, group=lagoslakeid,
                           color=nutrient)) + #MK estimate trend
   geom_smooth(data = all_loads_ts %>%
-                filter(station_id %in% trending_sites$station_id), method="lm", se=F,
+                filter(lagoslakeid %in% trending_sites$lagoslakeid), method="lm", se=F,
               mapping=aes(y=flux,x=water_year), color="black", linetype="dashed")+
   scale_color_manual(values=c("darkblue","gold"))+
   scale_fill_manual(values=c("darkblue","gold"))+
@@ -118,20 +127,20 @@ ggplot() +
 #Total P
 ggplot() +
   geom_point(data = all_loads_ts %>%
-               filter(station_id %in% trending_sites$station_id) %>%
+               filter(lagoslakeid %in% trending_sites$lagoslakeid) %>%
                filter(nutrient=="TP") %>%
                mutate(water_year=round(water_year, 0),
                       water_year=as.integer(water_year)),
              aes(y = flux, x=water_year, fill=nutrient),
              col = "black", shape=21)+
-  facet_wrap(.~station_id, scales="free_y")  +
-  # facet_grid(station_id~nutrient, scales = "free_y") + #You might like the facet_wrap version better
+  facet_wrap(.~lagoslakeid, scales="free_y")  +
+  # facet_grid(lagoslakeid~nutrient, scales = "free_y") + #You might like the facet_wrap version better
   geom_abline(flux_slope_intercept %>%
                 filter(nutrient=="TP"),
-              mapping=aes(intercept = intercept, slope = slope, group=station_id,
+              mapping=aes(intercept = intercept, slope = slope, group=lagoslakeid,
                           color=nutrient)) + #MK estimate trend
   # geom_smooth(data = all_loads_ts %>%
-  #               filter(station_id %in% trending_sites$station_id) %>%
+  #               filter(lagoslakeid %in% trending_sites$lagoslakeid) %>%
   #               filter(nutrient=="TP"), method="lm", se=F,
   #             mapping=aes(y=flux,x=water_year), color="black", linetype="dashed")+ #LM trend-- you can see how these differ with the outliers
   scale_color_manual(values=c("darkblue","gold"))+
@@ -146,20 +155,20 @@ ggsave("figures/TP_load_trends.png", width=8, height=6,units="in", dpi=300)
 #Total N
 ggplot() +
   geom_point(data = all_loads_ts %>%
-               filter(station_id %in% trending_sites$station_id) %>%
+               filter(lagoslakeid %in% trending_sites$lagoslakeid) %>%
                filter(nutrient=="TN") %>%
                mutate(water_year=round(water_year, 0),
                       water_year=as.integer(water_year)),
              aes(y = flux, x=water_year, fill=nutrient),
              col = "black", shape=21)+
-  facet_wrap(.~station_id, scales="free_y")  +
-  # facet_grid(station_id~nutrient, scales = "free_y") + #You might like the facet_wrap version better
+  facet_wrap(.~lagoslakeid, scales="free_y")  +
+  # facet_grid(lagoslakeid~nutrient, scales = "free_y") + #You might like the facet_wrap version better
   geom_abline(flux_slope_intercept %>%
                 filter(nutrient=="TN"),
-              mapping=aes(intercept = intercept, slope = slope, group=station_id,
+              mapping=aes(intercept = intercept, slope = slope, group=lagoslakeid,
                           color=nutrient)) + #MK estimate trend
   # geom_smooth(data = all_loads_ts %>%
-  #               filter(station_id %in% trending_sites$station_id) %>%
+  #               filter(lagoslakeid %in% trending_sites$lagoslakeid) %>%
   #               filter(nutrient=="TN"), method="lm", se=F,
   #             mapping=aes(y=flux,x=water_year), color="black", linetype="dashed")+ #LM trend-- you can see how these differ with the outliers
   scale_color_manual(values=c("gold"))+
@@ -186,33 +195,33 @@ max_TPloads <- max(max_TP$flux)
 #g1 <- 
   ggplot() +
   geom_point(data = all_loads_ts %>%
-               filter(station_id %in% trending_sites$station_id) %>%
+               filter(lagoslakeid %in% trending_sites$lagoslakeid) %>%
                filter(nutrient=="TN") %>%
                mutate(water_year=round(water_year, 0),
                       water_year=as.integer(water_year)),
              aes(y = flux, x=water_year, fill=nutrient),
              col = "black", shape=21)+
- facet_wrap(.~station_id, scales="free_y")  +
-  # facet_grid(station_id~nutrient, scales = "free") + #You might like the facet_wrap version better
+ facet_wrap(.~lagoslakeid, scales="free_y")  +
+  # facet_grid(lagoslakeid~nutrient, scales = "free") + #You might like the facet_wrap version better
   geom_abline(flux_slope_intercept %>%
                 filter(nutrient=="TN"),
-              mapping=aes(intercept = intercept, slope = slope, group=station_id,
+              mapping=aes(intercept = intercept, slope = slope, group=lagoslakeid,
                           color=nutrient))+
 
 #g2 <- ggplot() +
   geom_point(data = all_loads_ts %>%
-               filter(station_id %in% trending_sites$station_id) %>%
+               filter(lagoslakeid %in% trending_sites$lagoslakeid) %>%
                filter(nutrient=="TP") %>%
                mutate(water_year=round(water_year, 0),
                       water_year=as.integer(water_year)),
              aes(y = flux, x=water_year, fill=nutrient),
              col = "black", shape=21)+
    # scale_y_continuous("TN flux",  sec.axis = sec_axis(~ . *2), name = "TP loads") +
-  facet_wrap(.~station_id, scales="free_y")  +
- # facet_grid(station_id~nutrient, scales = "free") + #You might like the facet_wrap version better
+  facet_wrap(.~lagoslakeid, scales="free_y")  +
+ # facet_grid(lagoslakeid~nutrient, scales = "free") + #You might like the facet_wrap version better
   geom_abline(flux_slope_intercept %>%
                 filter(nutrient=="TP"),
-              mapping=aes(intercept = intercept, slope = slope, group=station_id,
+              mapping=aes(intercept = intercept, slope = slope, group=lagoslakeid,
                           color=nutrient))+
     scale_y_continuous(sec.axis = sec_axis(trans = ~ . * (max_TPloads/ max_TNloads),
                                            name = 'TN flux')) +
@@ -223,66 +232,42 @@ max_TPloads <- max(max_TP$flux)
     ylab('TP flux')
 #g1 + g2
 
-  
-  
-  d2 <- gather(d1, 'var', 'val', stones:revenue) %>% 
-    mutate(val = if_else(var == 'revenue', as.double(val), val / (max_stones / max_revenue)))
-  
-  ggplot(mapping = aes(clarity, val)) +
-    geom_bar(aes(fill = cut), filter(d2, var == 'revenue'), stat = 'identity') +
-    geom_point(data = filter(d2, var == 'stones'), col = 'red') +
-    facet_grid(~cut) +
-    scale_y_continuous(sec.axis = sec_axis(trans = ~ . * (max_stones / max_revenue),
-                                           name = 'number of stones'),
-                       labels = dollar) +
-    theme(axis.text.x = element_text(angle = 90, hjust = 1),
-          axis.text.y = element_text(color = "#4B92DB"),
-          axis.text.y.right = element_text(color = "red"),
-          legend.position="bottom") +
-    ylab('revenue')  
+
     
 ##merging trend sites with df
 
-ts_TNtrends_lakes <- left_join(upstream_sites_lagos, nutrient_loads_unnested, by="station_id")%>%
+ts_TNtrends_lakes <- left_join(upstream_sites_lagos, nutrient_loads_unnested, by="lagoslakeid")%>%
+  group_by(lagoslakeid) %>%
     filter(nutrient=="TN") %>%
-  group_by(lagoslakeid) %>%
-  dplyr::select(lake_namelagos, lagoslakeid, Trend, lon, lat)%>%
-  distinct()%>%
+   dplyr::select(lake_namelagos, lagoslakeid, Trend)%>%
+    distinct()%>%
   na.omit() 
 
-ts_TPtrends_lakes <- left_join(upstream_sites_lagos, nutrient_loads_unnested, by="station_id")%>%
+ts_TPtrends_lakes <- left_join(upstream_sites_lagos, nutrient_loads_unnested, by="lagoslakeid")%>%
+  group_by(lagoslakeid) %>%
   filter(nutrient=="TP") %>%
-  group_by(lagoslakeid) %>%
-  dplyr::select(station_id, lake_namelagos, lagoslakeid, Trend, lon, lat)%>%
+  dplyr::select(lake_namelagos, lagoslakeid, Trend)%>%
   distinct()%>%
-  na.omit() 
+  na.omit()
 
-ts_trends_lakes <- left_join(upstream_sites_lagos, nutrient_loads_unnested, by="station_id")%>%
-  group_by(lagoslakeid) %>%
-  dplyr::select(lake_namelagos, lagoslakeid, Trend, lon, lat)%>%
-  distinct()%>%
-  na.omit() 
+filter(ts_TNtrends_lakes, Trend == "no trend")
+filter(ts_TPtrends_lakes, Trend == "no trend")
 
-filter(ts_TNtrends_lakes, Trend == "decreasing")
-filter(ts_TPtrends_lakes, Trend == "decreasing")
+d_mm <- d_mm %>%
+  mutate(lagoslakeid= as.character(lagoslakeid))
 
-ts_trends_lakes_sp <- ts_trends_lakes %>%
-               st_as_sf( coords= c("lon", "lat"),
+ts_TNtrends_lakes_sp <- left_join(d_mm, ts_TNtrends_lakes, by="lagoslakeid")%>%
+               st_as_sf( coords= c("lake_lon_decdeg", "lake_lat_decdeg"),
                        crs=4326) %>%
   filter(!Trend=="no trend") 
 
-mapview(ts_trends_lakes_sp, zcol = "Trend") 
+ts_TPtrends_lakes_sp <- left_join(d_mm, ts_TPtrends_lakes, by="lagoslakeid")%>%
+  st_as_sf( coords= c("lake_lon_decdeg", "lake_lat_decdeg"),
+            crs=4326) %>%
+  filter(!Trend=="no trend") 
 
-##Comparing some LAGOS-Limno data and loads trends
-
-loads_trends_onsite_concTP <- left_join(TP_loads_ts, upstream_gauges_lakes_all, by="station_id")%>%
-  filter(nutrient == "TP" & station_id == "09352900")
+mapview(ts_TPtrends_lakes_sp, zcol = "Trend") 
 
 
-ggplot(loads_trends_onsite_concTP) +
-  geom_point(aes(x=year, y=log(tp_ugl_median)), col = "red", size=3, shape=16)+
-  geom_point(aes(x=water_year, y=log(flux)),
-             col = "black",size=2, shape=15)+
-  theme_bw()
 
 
