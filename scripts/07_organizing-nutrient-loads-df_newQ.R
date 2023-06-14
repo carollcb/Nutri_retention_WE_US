@@ -1,6 +1,6 @@
 library(tidyverse)
 
-upstream_sites_lagos <- read.csv("data/candidate_sites_TP_TN_Lagos_lakes.csv",
+upstream_sites_lagos <- read.csv("data/upstream_sites_final.csv",
                                  colClasses = "character",
                                  stringsAsFactors = FALSE
 ) 

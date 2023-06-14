@@ -9,7 +9,7 @@ library(patchwork)
 source("scripts/07_organizing-nutrient-loads-df_newQ.R")
 ## Loading data
 
-upstream_sites_lagos <- read.csv("data/candidate_sites_TP_TN_Lagos_lakes.csv",
+upstream_sites_lagos <- read.csv("data/upstream_sites_final.csv",
                                  colClasses = "character",
                                  stringsAsFactors = FALSE
 ) 
