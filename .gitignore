@@ -9,6 +9,8 @@ hydrolakes_NA.shx
 
 #Ignore shps
 /ignore_shps
+/shps/joined_hydrolakes_lagos.shp
+/shps/hydrolakes_lagos_merged.shp
 
 #Ignore LAGOS info
 /data/lagos_dataset_info.csv
@@ -18,3 +20,4 @@ hydrolakes_NA.shx
 #Ignore SPARROW data files
 /data/wq_tn.txt
 /data/wq_tp.txt
+
