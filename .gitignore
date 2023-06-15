@@ -17,6 +17,7 @@ hydrolakes_NA.shx
 /data/lagos_dataset_info.csv
 /data/limno_summary.csv
 /data/limno_summary_2000s.csv
+/data/lake_watersheds.csv
 
 #Ignore SPARROW data files
 /data/wq_tn.txt

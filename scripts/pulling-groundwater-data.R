@@ -11,6 +11,7 @@ library(mapview)
 
 source("scripts/LAGOS_EDI.R")
 source("scripts/LAGOS_EDI_characteristics.R")
+source("scripts/06_plottingcorrelations_new.R")
 
 lagos_lakearea <- dt2 %>%
   select(lagoslakeid, lake_totalarea_ha)
@@ -76,10 +77,6 @@ for(c in 1:length(list_files_TN)) {
   TN <- bind_rows(TN, tmp) # bind into a single dataframe
 }
 
-
-upstream_sites_lagos <- read.csv("data/candidate_sites_TP_TN_Lagos_lakes.csv",
-                                 colClasses = "character",
-                                 stringsAsFactors = FALSE) ##Should we divide streamflow by gauges drainage area to compare? -> m/yr
 ##yearly loads data
 
 nitrogen_loads <- TN %>%
@@ -117,55 +114,23 @@ ggplot()+
 
 
 
-## checking Alice's idea: rel_area = lake catchment (ws)/outlet watershed area (nws)
+## checking Alice's idea: rel_area = lake catchment (ws)/outlet watershed area (nws) and drainake_lake = 1 - rel_area
 #I've done the overlap analysis in QGis
 #From LAGOS-US data: 
 
-ws_nws_overlap <- st_read("D:/Datasets/Datasets/LAGOS-US/ws_nws_overlap.shp")%>%
-  rename(lagoslakeid = lagoslakei, overl_area = lagos_ws_1)%>%
-  mutate(lagoslakeid= as.character(lagoslakeid))
-
-
-upstream_sites_lagos <- read.csv("data/candidate_sites_TP_TN_Lagos_lakes.csv",
-                                 colClasses = "character",
-                                 stringsAsFactors = FALSE) 
-
-
-sites_overlap <- inner_join(ws_nws_overlap, upstream_sites_lagos, by="lagoslakeid")%>%
-  mutate(overl_area_final = 100 - overl_area)%>%
-  select(lagoslakeid, Shape_Leng, Shape_Area, overl_area_final, lon, lat, lake_namelagos)%>%
-  mutate(groundw_import = overl_area_final >= 50)
-
-mapview(sites_overlap, zcol = "groundw_import") #28/40 (70% of our sites): >80% of the sites with available data don't have high groundwater contribution
-
-sites_groundwater_import <- sites_overlap %>%
-  filter(groundw_import == "TRUE") 
-
-sites_groundwater_noimport <- sites_overlap %>%
-  filter(groundw_import == "FALSE") 
-
-upstream_sites_sp <- upstream_sites_lagos %>%
-  st_as_sf(coords = c(x="lon", y="lat"), crs=4326)
-
-mapview(sites_overlap, zcol = "groundw_import") + mapview(upstream_sites_sp)
-
 #testing
-lagos_watersh <- read.csv("C:/Users/cbarbosa/Documents/lake_watersheds.csv")%>%
+lagos_watersh <- read.csv("data/lake_watersheds.csv")%>%
   select(lagoslakeid, ws_area_ha, nws_area_ha, ws_lat_decdeg,ws_lon_decdeg, nws_lat_decdeg,nws_lon_decdeg)%>%
   mutate(lagoslakeid=as.character(lagoslakeid))%>%
-  mutate(drain_lake_ratio = (1 - (ws_area_ha/nws_area_ha)))
+  mutate(rel_area = (ws_area_ha/nws_area_ha))%>%
+  mutate(drain_lake_ratio = (1 - rel_area))
 
-new_sites_overlap <- inner_join(lagos_watersh,upstream_sites_lagos, by="lagoslakeid" )
+upstream_sites_lagos_nodupl <- upstream_sites_lagos %>%
+  distinct(lagoslakeid, .keep_all = TRUE)
+
+new_sites_overlap <- inner_join(lagos_watersh,upstream_sites_lagos_nodupl, by="lagoslakeid" )
 
 ggplot(new_sites_overlap, aes(x=drain_lake_ratio)) +
-  geom_histogram(binwidth=.5, colour="black", fill="white")
+  geom_histogram(binwidth=.5, colour="black", fill="brown")+
+  ggtitle("Distribution of the drainake-lake ratio in the study sites")
 
-
-
-
-new_sites_overlap <- new_sites_overlap %>%
-  select(lagoslakeid, rel_area)%>%
-  mutate(groundw_import = rel_area > 0.5)
-
-sites_groundwater_noimport_new <- new_sites_overlap %>%
-  filter(groundw_import == "FALSE")
