@@ -1,7 +1,10 @@
 ###-----pulling covariates data----###
 
 
-#weather data -> monthly precipitation and air temperature from LAGOS-GEO
+##weather data -> monthly precipitation and air temperature from LAGOS-GEO -> tranforming to annual data
+
+
+
 
 #Lake networks and connectivity metrics from LAGOS-US
 
