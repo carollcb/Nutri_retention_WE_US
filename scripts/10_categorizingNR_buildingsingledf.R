@@ -4,7 +4,8 @@ library(tidyverse)
 source("scripts/pulling-covariates-data.R")
 
 ##Reading final dataset
-data <- read.csv("data/final_retention_dataset.csv")
+data <- read.csv("data/final_retention_dataset.csv")%>%
+  mutate(lagoslakeid = as.character(lagoslakeid)) 
 
 ##P retention
 hist(data$Pret_coef)
@@ -45,14 +46,9 @@ str(data)
 summary(data$TN_removal_gNm2yr.cat)
 
 ###testing
-upstream_sites_lagos <- read.csv("data/upstream_sites_final.csv",
-                                 colClasses = "character",
-                                 stringsAsFactors = FALSE)%>%
-  distinct(lagoslakeid, .keep_all = TRUE) 
+#join to hydrolakes first to get Hylak_id and then proceed with steps below
 
-hydrolakes_lagos <- st_read("shps/joined_hydrolakes_lagos_Final.shp") %>% 
-  rename(lagoslakeid = lagoslakei)%>%
-  mutate(lagoslakeid = as.character(lagoslakeid))%>%
-  mutate(res_time_yr = Res_time/365)
 
-hydrolakes_upstream_sites <- inner_join(upstream_sites_lagos, hydrolakes_lagos, by="lagoslakeid")
+data_clim <- inner_join(data, yearly_clim_data, by=c('lagoslakeid', 'water_year'))
+
+data_clim_connect <- inner_join(data_clim, connect_data_lagos_final, by="lagoslakeid")
