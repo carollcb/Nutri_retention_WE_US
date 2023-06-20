@@ -1,7 +1,6 @@
 ## Exploring groundwater data from LAGOS-GEO
 
 #baseflowindex_pct: mean within the zone of the percentage of streamflow that can be attributed to groundwater discharge into streams, calculated as baseflow divided by total flow; data from 1951 to 1980
-
 #groundwaterrecharge_mmperyr: mean within the zone of annual groundwater recharge calculated as baseflow multiplied by mean annual runoff; data from 1951 to 1980
 #runoff_inperyr: mean within the zone of annual runoff; data from 1951 to 1980
 
@@ -119,7 +118,7 @@ ggplot()+
 #From LAGOS-US data: 
 
 #testing
-lagos_watersh <- read.csv("data/lake_watersheds.csv")%>%
+lagos_watersh <- read.csv("D:/Datasets/Datasets/LAGOS-US/lake_watersheds.csv")%>%
   select(lagoslakeid, ws_area_ha, nws_area_ha, ws_lat_decdeg,ws_lon_decdeg, nws_lat_decdeg,nws_lon_decdeg)%>%
   mutate(lagoslakeid=as.character(lagoslakeid))%>%
   mutate(rel_area = (ws_area_ha/nws_area_ha))%>%
