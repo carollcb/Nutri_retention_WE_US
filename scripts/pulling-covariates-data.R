@@ -5,12 +5,6 @@ source("scripts/LAGOS_EDI.R")
 source('scripts/LAGOS_EDI_characteristics.R')
 source('scripts/09_calculating-TN-retention-timeseries.R')
 
-##weather data and elevation -> monthly precipitation and air temperature from LAGOS-GEO -> transforming to annual data
-#clim_data <- read.csv("/Users/carolinabarbosa/Dropbox/LAGOS_GEO/zone_climate_monthly.csv")%>%
-  clim_data <- read.csv("C:/Users/cbarbosa/Dropbox/LAGOS_GEO/zone_climate_monthly.csv")%>%
-  select(zoneid,climate_year, climate_month, climate_tmean_degc, climate_ppt_mm)%>%
-  rename(hu12_zoneid = zoneid)
-
 upstream_sites_lagos <- read.csv("data/upstream_sites_final.csv",
                                  colClasses = "character",
                                  stringsAsFactors = FALSE)%>%
@@ -21,6 +15,13 @@ d_mm <- d_mm %>%
 
 study_sites_huc12 <- inner_join(upstream_sites_lagos, d_mm, by="lagoslakeid")%>%
   select(lagoslakeid, hu12_zoneid, lake_elevation_m, lake_centroidstate)
+
+
+##weather data and elevation -> monthly precipitation and air temperature from LAGOS-GEO -> transforming to annual data
+#clim_data <- read.csv("/Users/carolinabarbosa/Dropbox/LAGOS_GEO/zone_climate_monthly.csv")%>%
+  clim_data <- read.csv("C:/Users/cbarbosa/Dropbox/LAGOS_GEO/zone_climate_monthly.csv")%>%
+  select(zoneid,climate_year, climate_month, climate_tmean_degc, climate_ppt_mm)%>%
+  rename(hu12_zoneid = zoneid)
 
 clim_data_sites <- inner_join(study_sites_huc12, clim_data, by="hu12_zoneid")%>%
   filter(climate_year > '2000' & climate_year <'2016')
@@ -97,13 +98,28 @@ soils_data_lagos_final <- soils_data_lagos %>%
 #rm(soils_data)
 
 ##Terrain/landforms from LAGOS-GEO (zone_terrain.csv)
-terrain_data <- read.csv("C:/Users/cbarbosa/Dropbox/LAGOS_GEO/zone_terrain.csv")
+terrain_data <- read.csv("/Users/carolinabarbosa/Dropbox/LAGOS_GEO/zone_terrain.csv")%>%
+filter(spatial_division == 'hu12')%>%
+  rename(hu12_zoneid = zoneid)
 
-rm()
+terrain_data_final <- terrain_data %>%
+  pivot_wider(names_from = variable_name, values_from = value)
+
+terrain_data_lagos <- inner_join(study_sites_huc12, terrain_data_final, by= "hu12_zoneid")
+
+rm(terrain_data)
+
 ##Human activities from LAGOS-GEO (zone_human.csv)
-human_data <- read.csv("C:/Users/cbarbosa/Dropbox/LAGOS_GEO/zone_human.csv")
+human_data <- read.csv("/Users/carolinabarbosa/Dropbox/LAGOS_GEO/zone_human.csv")%>%
+  filter(spatial_division == 'hu12')%>%
+  rename(hu12_zoneid = zoneid)
 
-rm()
+human_data_final <- human_data %>%
+  pivot_wider(names_from = variable_name, values_from = value)
+
+human_data_lagos <- inner_join(study_sites_huc12, human_data_final, by= "hu12_zoneid")
+
+rm(human_data)
 # Water quality - look at dataset from Willimans and Labou 2017?? (I was not able to find it. Ask Stephanie)
 
 #Ice/snow dynamics - snow climate metrics from Lute et al 2022 
