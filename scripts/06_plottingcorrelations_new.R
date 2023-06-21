@@ -21,7 +21,7 @@ upstream_sites_lagos <- read.csv("data/upstream_sites_final.csv",
 
 
 #I merged hydrolakes and LAGOS in QGis - not sure if it worked well. Maybe repeat this step!
-hydrolakes_lagos <- st_read("shps/joined_hydrolakes_lagos_Final.shp") %>% 
+hydrolakes_lagos <- st_read("D:/nutri_ret_shps/joined_hydrolakes_lagos_Final.shp") %>% 
   rename(lagoslakeid = lagoslakei)%>%
   mutate(lagoslakeid = as.character(lagoslakeid))%>%
   mutate(res_time_yr = Res_time/365)

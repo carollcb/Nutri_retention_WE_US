@@ -24,7 +24,8 @@ ggplot(Nretention_sp, aes(x=totTNload_gm2yr, y=TN_removal_gNm2yr)) +
 
 ##----Merging Hydrolakes coord and Meyer et 2023 dataset
 #hydrol_us <- st_read("D:/Datasets/Datasets/HydroLAKES_polys_v10_shp/HydroLAKES_polys_v10.shp")
-hydrol_us <- st_read("shps/joined_hydrolakes_lagos_Final.shp")
+#hydrol_us <- st_read("shps/joined_hydrolakes_lagos_Final.shp")
+hydrol_us <- st_read("D:/nutri_ret_shps/joined_hydrolakes_lagos_Final.shp")
 
 hydrol_tot <- as.data.frame(hydrol_us)
 
