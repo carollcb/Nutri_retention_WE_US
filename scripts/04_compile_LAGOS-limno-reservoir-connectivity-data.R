@@ -700,19 +700,19 @@ summary(as.factor(dt4$nla2012_siteid))
 
 # in situ -----------------------------------------------------------------
 
-chemicalphysical<-read.csv("C:/Users/carol/OneDrive/Documentos/LIMNO_v2.1/site_chemicalphysical_epi.csv") %>%
+chemicalphysical<-read.csv("C:/Users/cbarbosa/Dropbox/CL_LAGOSUS_exports/LAGOSUS_LIMNO/US/LIMNO_v2.1/site_chemicalphysical_epi.csv") %>%
   mutate(event_date=lubridate::ymd(event_date),
          year=lubridate::year(event_date),
          year=factor(year),
          lagoslakeid=factor(lagoslakeid))
 
-nutrientsalgae<-read.csv("C:/Users/carol/OneDrive/Documentos/LIMNO_v2.1/site_nutrientsalgae_epi.csv")%>%
+nutrientsalgae<-read.csv("C:/Users/cbarbosa/Dropbox/CL_LAGOSUS_exports/LAGOSUS_LIMNO/US/LIMNO_v2.1/site_nutrientsalgae_epi.csv")%>%
   mutate(event_date=lubridate::ymd(event_date),
          year=lubridate::year(event_date),
          year=factor(year),
          lagoslakeid=factor(lagoslakeid))
 
-depth<-read.csv("C:/Users/carol/OneDrive/Documentos/LIMNO_v2.1/lake_depth.csv") %>%
+depth<-read.csv("C:/Users/cbarbosa/Dropbox/CL_LAGOSUS_exports/LAGOSUS_DEPTH/DEPTH_v0/lake_depth.csv") %>%
   mutate(lagoslakeid=factor(lagoslakeid))
 
 
@@ -723,7 +723,7 @@ lakeinformation <- lakeinformation %>%
                                    "NM", "AZ", "SD", "NE", "KS")) %>%
   mutate(lagoslakeid=factor(lagoslakeid))
 
-write.csv(lakeinformation, "lakes_WE_lagos.csv")
+#write.csv(lakeinformation, "lakes_WE_lagos.csv")
 
 lakewatersheds <- lakewatersheds %>%
   mutate(lagoslakeid=factor(lagoslakeid))
@@ -1172,11 +1172,21 @@ dt1_western_summary_2000s<-merge(dt1_western_summary_2000s,reservoir,  no.dups=T
 
 
 lakecharacteristics_trim <- lakecharacteristics %>%
-  dplyr::select(lagoslakeid, lake_perimeter_m, lake_totalarea_ha,
-                lake_connectivity_class, lake_connectivity_fluctuates, lake_connectivity_permanent,
-                lake_lakes4ha_upstream_ha, lake_lakes4ha_upstream_n, lake_lakes1ha_upstream_ha,
-                lake_lakes1ha_upstream_n, lake_lakes10ha_upstream_n, lake_lakes10ha_upstream_ha, 
-                lake_glaciatedlatewisc)
-dt1_western_summary_2000s<-merge(dt1_western_summary_2000s,lakecharacteristics_trim,  no.dups=TRUE, by="lagoslakeid")
+  dplyr::select(lagoslakeid, lake_perimeter_m, lake_totalarea_ha) #,
+               # lake_connectivity_class, lake_connectivity_fluctuates, lake_connectivity_permanent,
+              #  lake_lakes4ha_upstream_ha, lake_lakes4ha_upstream_n, lake_lakes1ha_upstream_ha,
+              #  lake_lakes1ha_upstream_n, lake_lakes10ha_upstream_n, lake_lakes10ha_upstream_ha, 
+             #   lake_glaciatedlatewisc)
+dt1_western_summary_2000s<-merge(dt1_western_summary_2000s,lakecharacteristics_trim,  no.dups=TRUE, by="lagoslakeid")%>%
+  #mutate(year= as.character.Date(year))%>%
+  select(lagoslakeid, year,ca_mgl_median, alk_ueql_median, do_mgl_median,ph_eq_median,so4_mgl_median, salinity_mgl_median,
+         chla_ugl_median, no2no3n_ugl_median, nh4n_ugl_median,tkn_ugl_median, tn_ugl_median, ton_ugl_median, tp_ugl_median, 
+         srpp_ugl_median, microcystin_ugl_median,ws_subtype,ws_area_ha, ws_perimeter_m,ws_lake_arearatio, ws_mbgconhull_length_m, 
+        ws_mbgconhull_width_m, ws_meanwidth_m, nws_area_ha,nws_perimeter_m, nws_lake_arearatio,nws_mbgconhull_length_m,lake_rsvr_class,               
+         lake_rsvr_probnl, lake_rsvr_probrsvr)%>%
+  mutate(year = as.Date(paste0(year, "-01-01"), format = "%Y-%m-%d"))%>%
+  mutate(year = format(year, format = "%Y"))
+
+
 
 #write.csv(dt1_western_summary_2000s, "data/limno_summary_2000s.csv")

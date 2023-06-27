@@ -119,24 +119,28 @@ ggplot()+
 
 #testing
 lagos_watersh <- read.csv("D:/Datasets/Datasets/LAGOS-US/lake_watersheds.csv")%>%
-  select(lagoslakeid, ws_area_ha, nws_area_ha, ws_lat_decdeg,ws_lon_decdeg, nws_lat_decdeg,nws_lon_decdeg)%>%
+  dplyr::select(lagoslakeid, ws_area_ha, nws_area_ha, ws_lat_decdeg,ws_lon_decdeg, nws_lat_decdeg,nws_lon_decdeg)%>%
   mutate(lagoslakeid=as.character(lagoslakeid))
   
 lagos_charact <- read.csv("D:/Datasets/Datasets/LAGOS-US/lake_characteristics.csv")%>%
-  select(lagoslakeid,lake_waterarea_ha)%>%
+  dplyr::select(lagoslakeid,lake_waterarea_ha)%>%
   mutate(lagoslakeid=as.character(lagoslakeid))
 
 lagos_test <- inner_join(lagos_charact, lagos_watersh, by="lagoslakeid")
 
+upstream_sites_lagos <- read.csv("data/upstream_sites_final.csv",
+                                 colClasses = "character",
+                                 stringsAsFactors = FALSE
+) %>% distinct(lagoslakeid, .keep_all = TRUE) 
 
-upstream_sites_lagos_nodupl <- upstream_sites_lagos %>%
-  distinct(lagoslakeid, .keep_all = TRUE)
 
-new_sites_overlap <- inner_join(lagos_test,upstream_sites_lagos_nodupl, by="lagoslakeid" )%>%
+drainage_ratio <- inner_join(lagos_test,upstream_sites_lagos, by="lagoslakeid" )%>%
+  mutate(lagoslakeid = as.character(lagoslakeid))%>%
 mutate(ws_drain_ratio = (ws_area_ha/lake_waterarea_ha))%>%
-  mutate(nws_drain_ratio = (nws_area_ha/lake_waterarea_ha))
+  mutate(nws_drain_ratio = (nws_area_ha/lake_waterarea_ha))%>%
+  dplyr::select(lagoslakeid, ws_drain_ratio, nws_drain_ratio)
 
-ggplot(new_sites_overlap, aes(x=ws_drain_ratio)) +
+ggplot(drainage_ratio , aes(x=ws_drain_ratio)) +
   scale_x_log10() + 
   geom_histogram(bins=3, colour="black", fill="brown")+
   ggtitle("Distribution of the drainage-ratio (log) in the study sites")
