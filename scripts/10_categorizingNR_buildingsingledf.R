@@ -20,13 +20,13 @@ sort(data$Pret_coef)
 data <- within(data, {   
   Pret_coef.cat <- NA # need to initialize variable
   Pret_coef.cat[Pret_coef < 9] <- "Low"
-  Pret_coef.cat[Pret_coef >= 9 & Pret_coef < 19] <- "Normal"
+  Pret_coef.cat[Pret_coef >= 9 & Pret_coef < 19] <- "Expected"
   Pret_coef.cat[Pret_coef >= 19] <- "High"
 } )
 str(data)
 summary(data$Pret_coef.cat)
 
-data$Pret_coef.cat <- factor(data$Pret_coef.cat, levels = c("High", "Normal", "Low"))
+data$Pret_coef.cat <- factor(data$Pret_coef.cat, levels = c("High", "Expected", "Low"))
 str(data)
 summary(data$Pret_coef.cat)
 
@@ -39,13 +39,13 @@ sort(data$TN_removal_gNm2yr)
 data <- within(data, {   
   TN_removal_gNm2yr.cat <- NA # need to initialize variable
   TN_removal_gNm2yr.cat[TN_removal_gNm2yr < 13000] <- "Low"
-  TN_removal_gNm2yr.cat[TN_removal_gNm2yr >= 13000 & TN_removal_gNm2yr < 397000] <- "Normal"
+  TN_removal_gNm2yr.cat[TN_removal_gNm2yr >= 13000 & TN_removal_gNm2yr < 397000] <- "Expected"
   TN_removal_gNm2yr.cat[TN_removal_gNm2yr >= 397000] <- "High"
 } )
 str(data)
 summary(data$TN_removal_gNm2yr.cat)
 
-data$TN_removal_gNm2yr.cat <- factor(data$TN_removal_gNm2yr.cat, levels = c("High", "Normal", "Low"))
+data$TN_removal_gNm2yr.cat <- factor(data$TN_removal_gNm2yr.cat, levels = c("High", "Expected", "Low"))
 str(data)
 summary(data$TN_removal_gNm2yr.cat)
 
@@ -59,17 +59,17 @@ data_clim_glcp_ts <- inner_join(data_clim_glcp, ts_hydro_us, by=c('lagoslakeid',
 
 data_all <- purrr::reduce(list(data_clim_glcp_ts, connect_data_lagos_final, 
                    lulc_median_lagos, soils_data_lagos_final,terrain_data_final, 
-                   human_data_final), dplyr::left_join, by = 'lagoslakeid') #%>% I've deleted wq data because those have tons of missing data
+                   human_data_final, snow_data, drainage_ratio), dplyr::left_join, by = 'lagoslakeid') #%>% I've deleted wq data because those have tons of missing data
   #distinct(lagoslakeid, .keep_all = TRUE)
 
 
-#write.csv(data_all, "data/data_all.csv")
+#write.csv(data_all, "data/data_all_final.csv")
 
 ##Adding more covariates (snow and drainage ratio)
-data_all <- read.csv("data/data_all.csv")%>%
-mutate(lagoslakeid = as.character(lagoslakeid))
+#data_all <- read.csv("data/data_all.csv")%>%
+#mutate(lagoslakeid = as.character(lagoslakeid))
 
-data_all_new <- inner_join(data_all, snow_data, by="lagoslakeid")%>%
-  inner_join(drainage_ratio, by="lagoslakeid")
+#data_all_new <- inner_join(data_all, snow_data, by="lagoslakeid")%>%
+ # inner_join(drainage_ratio, by="lagoslakeid")
 
 

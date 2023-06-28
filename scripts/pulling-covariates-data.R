@@ -49,7 +49,7 @@ rm(clim_data)
 #               names_to = c('var','stat'),
                #names_sep = '-')
 
-##Connectivity metrics from LAGOS-GEO
+##Connectivity metrics from LAGOS-GEO - Check why I deleted many connectivity metrics here.
 #connect_data <- read.csv("/Users/carolinabarbosa/Dropbox/LAGOS_GEO/zone_connectivity.csv")%>%
   connect_data <- read.csv("C:/Users/cbarbosa/Dropbox/LAGOS_GEO/zone_connectivity.csv")%>% 
   filter(spatial_division == 'hu12')%>%
@@ -57,42 +57,13 @@ rm(clim_data)
 
 connect_data_lagos <- inner_join(study_sites_huc12, connect_data, by= "hu12_zoneid")%>%
   dplyr::select(lagoslakeid, hu12_zoneid, variable_name, value, main_feature )%>%
-  filter(main_feature == "lakes4ha")%>%
+  filter(main_feature == "lakes1ha")%>%
   mutate(lagoslakeid=as.character(lagoslakeid))
 
 connect_data_lagos_final <- connect_data_lagos %>%
-  pivot_wider(names_from = variable_name, values_from = value) %>% #ready to merge with data/final_retention_dataset.csv
-select(-main_feature, -hu12_zoneid, -lakes4ha_isolated_pct, -lakes4ha_isolated_ha,	-lakes4ha_isolated_n,-lakes4ha_isolated_nperha,
-                           -lakes4ha_headwater_pct,-lakes4ha_headwater_ha,	-lakes4ha_headwater_n,	-lakes4ha_headwater_nperha,
-                           -lakes4ha_drainage_pct,-lakes4ha_drainage_ha,	-lakes4ha_drainage_n,	-lakes4ha_drainage_nperha, -lakes4ha_isolatedperm_pct,
-       -lakes4ha_isolatedperm_ha,         
-        -lakes4ha_isolatedperm_n,           
-       -lakes4ha_isolatedperm_nperha,       
-       -lakes4ha_headwaterperm_pct,         
-       -lakes4ha_headwaterperm_ha ,         
-       -lakes4ha_headwaterperm_n ,          
-       -lakes4ha_headwaterperm_nperha  ,    
-       -lakes4ha_drainageperm_pct ,         
-       -lakes4ha_drainageperm_ha ,          
-       -lakes4ha_drainageperm_n  ,          
-       -lakes4ha_drainageperm_nperha,
-- lakes4ha_terminal_pct,              
-- lakes4ha_terminal_ha ,              
-- lakes4ha_terminal_n ,               
-- lakes4ha_terminal_nperha  ,         
-- lakes4ha_terminallk_pct ,           
-- lakes4ha_terminallk_ha  ,           
-- lakes4ha_terminallk_n   ,           
-- lakes4ha_terminallk_nperha   ,      
-- lakes4ha_terminalperm_pct  ,        
-- lakes4ha_terminalperm_ha   ,        
-- lakes4ha_terminalperm_n    ,        
-- lakes4ha_terminalperm_nperha  ,     
-- lakes4ha_terminallkperm_pct  ,      
-- lakes4ha_terminallkperm_ha   ,      
-- lakes4ha_terminallkperm_n    ,      
-- lakes4ha_terminallkperm_nperha) 
-  
+  pivot_wider(names_from = variable_name, values_from = value) %>% 
+dplyr::select(-main_feature, -hu12_zoneid)
+       
 rm(connect_data)
 
 ##GLCP from Meyer et al 2020 (lake surface area, temp, precp and population between 1995-2015)
@@ -154,7 +125,7 @@ rm(soils_data)
 
 #rm(soils_data)
 
-##Terrain/landforms from LAGOS-GEO (zone_terrain.csv)
+##Terrain/landforms from LAGOS-GEO (zone_terrain.csv) -> cHECK ELEVATION data here!
 terrain_data <- read.csv("/Users/cbarbosa/Dropbox/LAGOS_GEO/zone_terrain.csv")%>%
 filter(spatial_division == 'hu12')%>%
   rename(hu12_zoneid = zoneid)
@@ -181,12 +152,12 @@ human_data_final <- human_data_lagos %>%
   pivot_wider(names_from = variable_name, values_from = value)
 
 rm(human_data)
-# Water quality - look at dataset from Willimans and Labou 2017?? (I was not able to find it. Ask Stephanie)
-sites <- upstream_sites_lagos %>%
-  select(lagoslakeid)
-wq_data <- right_join(dt1_western_summary_2000s, sites, by="lagoslakeid")%>%
+# Water quality - Lagos-Limno (had to not considere here. More NAs than values)
+#sites <- upstream_sites_lagos %>%
+ # select(lagoslakeid)
+#wq_data <- right_join(dt1_western_summary_2000s, sites, by="lagoslakeid")%>%
  # drop_na()
-select(-year, -ton_ugl_median, -microcystin_ugl_median, -salinity_mgl_median)
+#select(-year, -ton_ugl_median, -microcystin_ugl_median, -salinity_mgl_median)
   
 ##Ice/snow dynamics - snow climate metrics from Lute et al 2022 - scripts/ice_data_Lute.R
 #snow_dur <- st_read("shps/snow_duration_sites.shp")%>%

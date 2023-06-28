@@ -8,17 +8,18 @@ library(ggthemes)
 library(missRanger)
 
 #data_all <- read.csv("data/data_all.csv")%>%
-data_all <- data_all_new %>%
-  dplyr::select(-X, -lake_centroidstate )%>%
-  mutate(TN_removal_gNm2yr.cat = ifelse(TN_removal_gNm2yr.cat == "Regular", "Expected", TN_removal_gNm2yr.cat))%>%
-  mutate(Pret_coef.cat = ifelse(Pret_coef.cat == "Normal", "Expected", Pret_coef.cat))
+data_all <- data_all %>%
+  #dplyr::select(-X, -lake_centroidstate )%>%
+  dplyr::select(-lake_centroidstate )#%>%
+  #mutate(TN_removal_gNm2yr.cat = ifelse(TN_removal_gNm2yr.cat == "Regular", "Expected", TN_removal_gNm2yr.cat))%>%
+  #mutate(Pret_coef.cat = ifelse(Pret_coef.cat == "Normal", "Expected", Pret_coef.cat))
 
 #getting data
 retention<-data_all %>%
   na.omit()
 
 retention <- retention %>%
-  mutate(across(contains("lakes4ha_"), as.numeric))%>%
+  mutate(across(contains("lakes1ha_"), as.numeric))%>%
   mutate(across(contains("soil_"), as.numeric))%>%
   mutate(across(contains("glaciatedlatewisc_pct"), as.numeric))%>%
   mutate(across(contains("elevation_"), as.numeric))%>%
@@ -34,7 +35,7 @@ retention <- retention %>%
 
 str(retention)
 #write.csv(retention, "data/covariates_list.csv")
-#The dataset contain 799 obs. of  128 variables. 
+#The dataset contain 799 obs. of  167 variables. 
 
 ###TN_removal_gNm2yr.cat considered as response variables. TN_removal_gNm2yr.cat variable should be a factor variable.
 
@@ -102,7 +103,7 @@ rf_res %>%
 rf_auc <- 
   rf_res %>% 
   collect_predictions(parameters = rf_best) %>% 
-  roc_curve(TN_removal_gNm2yr.cat, .pred_Expected:.pred_Low) %>% 
+  roc_curve(TN_removal_gNm2yr.cat, .pred_High:.pred_Low) %>% 
   mutate(model = "Random Forest") 
 
 #So start by rebuilding parsnip model object from scratch and add a new argument (impurity) to get VI scores
@@ -143,7 +144,7 @@ vip_plot
 #Plot ROC curve
 last_rf_fit %>% 
   collect_predictions() %>% 
-  roc_curve(TN_removal_gNm2yr.cat, .pred_Expected:.pred_Low) %>% 
+  roc_curve(TN_removal_gNm2yr.cat, .pred_High:.pred_Low) %>% 
   autoplot()
 
 
@@ -194,7 +195,7 @@ confMatRF<-confusionMatrix(
   factor(test_d$TN_removal_gNm2yr.cat)
 )
 
-confMatRF #accuracy: 0.835
+confMatRF #accuracy: 0.823
 
 #Plot CM
 # plt<-as.data.frame(confMatRF$table)
@@ -403,17 +404,13 @@ F<-  ggplot(retention, aes(x = TN_removal_gNm2yr.cat, y = mean_annual_temp_k, fi
                                              legend.text = element_text(size=9))
 
 ###Pret_coef.cat considered as response variables. Pret_coef.cat variable should be a factor variable.
-data_all <- data_all_new %>%
-  dplyr::select(-X, -lake_centroidstate )%>%
-  mutate(TN_removal_gNm2yr.cat = ifelse(TN_removal_gNm2yr.cat == "Regular", "Expected", TN_removal_gNm2yr.cat))%>%
-  mutate(Pret_coef.cat = ifelse(Pret_coef.cat == "Normal", "Expected", Pret_coef.cat))
 
 #getting data
 retention<-data_all %>%
   na.omit()
 
 retention <- retention %>%
-  mutate(across(contains("lakes4ha_"), as.numeric))%>%
+  mutate(across(contains("lakes1ha_"), as.numeric))%>%
   mutate(across(contains("soil_"), as.numeric))%>%
   mutate(across(contains("glaciatedlatewisc_pct"), as.numeric))%>%
   mutate(across(contains("elevation_"), as.numeric))%>%
@@ -488,7 +485,7 @@ rf_res %>%
 rf_auc <- 
   rf_res %>% 
   collect_predictions(parameters = rf_best) %>% 
-  roc_curve(Pret_coef.cat, .pred_Expected:.pred_Low) %>% 
+  roc_curve(Pret_coef.cat, .pred_High:.pred_Low) %>% 
   mutate(model = "Random Forest") 
 
 #So start by rebuilding parsnip model object from scratch and add a new argument (impurity) to get VI scores
@@ -529,7 +526,7 @@ vip_plot2
 #Plot ROC curve
 last_rf_fit %>% 
   collect_predictions() %>% 
-  roc_curve(Pret_coef.cat, .pred_Expected:.pred_Low) %>% 
+  roc_curve(Pret_coef.cat, .pred_High:.pred_Low) %>% 
   autoplot()
 
 
@@ -579,7 +576,7 @@ confMatRF<-confusionMatrix(
   factor(test_d$Pret_coef.cat)
 )
 
-confMatRF #accuracy: 0.9312
+confMatRF #accuracy: 0.88
 
 #Plot CM
 # plt<-as.data.frame(confMatRF$table)
@@ -629,7 +626,10 @@ ggtitle("Confusion matrix for the testing data of the TP retention")
 #g2 +  ROC
 
 g1 / g2
+ggsave("figures/confusion_matrixs.png", width=8, height=6,units="in", dpi=300)
 
 vip_plot / vip_plot2
+ggsave("figures/vip_plot.png", width=8, height=6,units="in", dpi=300)
 
 ROC / ROC2
+ggsave("figures/ROC_plot.png", width=8, height=6,units="in", dpi=300)
