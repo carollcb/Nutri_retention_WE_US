@@ -14,8 +14,9 @@ pb <- progress_bar$new(total = length(candidate_sites$sites),
                        format = "calculating loading for :site_no [:bar] :percent",
                        clear = FALSE,
                        width = 80, show_after = 0)
+rerun = TRUE
 
-for(site_no in candidate_sites$sites){
+for(site_no in candidate_sites$sites[16]){
   # site_no <- "05427718"
   # site_no <- candidate_sites$sites[1]
   # pb$tick(tokens = list(site_no = site_no))
@@ -81,7 +82,7 @@ for(site_no in candidate_sites$sites){
 
     fit_reg2_tn <- suppressWarnings(suppressMessages(loadReg2(
         loadReg(
-        as.formula(paste0("phosphorus_mgl ~ model(", model_no_tn, ")")),
+        as.formula(paste0("nitrogen_mgl ~ model(", model_no_tn, ")")),
         data = data, flow = "flow_cfs", dates = "date",
         time.step = "day")
       )))
@@ -150,6 +151,7 @@ for(site_no in candidate_sites$sites){
   read.csv(file_out, stringsAsFactors = FALSE)
 }
 
+# beepr::beep(5)
 #preds_annual <- read.csv("data/results/08383500/loadflex.csv")
 # sapply(candidate_sites, function(x) unlink(paste0("data/results/", x, "/loadflex.csv")))
 
