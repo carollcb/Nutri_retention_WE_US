@@ -38,6 +38,6 @@ atm_depos_N_lakes <- left_join(upstream_sites_lagos, atm_depos_N_final, by= "lag
   dplyr::select(lagoslakeid, water_year, totaldepnitrogen_kgperha, lake_lon_decdeg, lake_lat_decdeg)
 
 total_Nload <- merge(atm_depos_N_lakes , TN_loads_ts)%>%
-  select(lagoslakeid, water_year, totaldepnitrogen_kgperha, flux, lake_lon_decdeg, lake_lat_decdeg)%>%
+  dplyr::select(lagoslakeid, water_year, totaldepnitrogen_kgperha, flux, lake_lon_decdeg, lake_lat_decdeg)%>%
   mutate(totTNload_gm2yr = ((totaldepnitrogen_kgperha + flux)*0.1))
 

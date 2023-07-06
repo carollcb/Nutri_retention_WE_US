@@ -250,8 +250,8 @@ ts_TPtrends_lakes <- left_join(upstream_sites_lagos, nutrient_loads_unnested, by
   distinct()%>%
   na.omit()
 
-filter(ts_TNtrends_lakes, Trend == "no trend")
-filter(ts_TPtrends_lakes, Trend == "no trend")
+filter(ts_TNtrends_lakes, Trend == "increasing")
+filter(ts_TPtrends_lakes, Trend == "increasing")
 
 d_mm <- d_mm %>%
   mutate(lagoslakeid= as.character(lagoslakeid))
@@ -266,7 +266,7 @@ ts_TPtrends_lakes_sp <- left_join(d_mm, ts_TPtrends_lakes, by="lagoslakeid")%>%
             crs=4326) %>%
   filter(!Trend=="no trend") 
 
-mapview(ts_TPtrends_lakes_sp, zcol = "Trend") 
+mapview(ts_TNtrends_lakes_sp, zcol = "Trend") 
 
 
 

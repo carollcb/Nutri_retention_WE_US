@@ -33,13 +33,41 @@ year=factor(year))%>%
 
 limno_tp_tn_2000 <- limno_tp_tn_yrs %>%
   mutate(year=as.numeric(as.character(year))) %>%
-  filter(year>=2000)
+  filter(year>2000 & year<2017)
 
-candidate_sites <- read.csv("data/candidate_sites_TP_TN_Lagos_lakes.csv",
+limno_chemphys <- read.csv("C:/westernLimno/LIMNO_v2.1/site_chemicalphysical_epi.csv")
+
+limno_temp_do <- limno_chemphys %>%
+  mutate(event_date=lubridate::ymd(event_date),
+         year=lubridate::year(event_date),
+         year=factor(year),
+         lagoslakeid=factor(lagoslakeid))%>%
+  select(lagoslakeid, event_date, temp_degc, do_mgl)
+
+limno_temp_do_yrs  <- limno_temp_do %>%
+  mutate(year=lubridate::year(event_date),
+         year=factor(year))%>%
+  group_by(lagoslakeid, year) %>%
+  summarize_at(c("temp_degc","do_mgl"), list(median = function(x) median(x,na.rm=T),
+                                          n=length))%>%
+  filter(!(is.na(temp_degc_median) &
+             is.na(do_mgl_median))) 
+
+limno_temp_do_2000 <- limno_temp_do_yrs %>%
+  mutate(year=as.numeric(as.character(year))) %>%
+  filter(year>2000 & year<2017)
+
+
+WQ_data <- merge(limno_tp_tn_2000, limno_temp_do_2000)
+
+sites <- read.csv("data/upstream_sites_final.csv",
                             colClasses = "character",
-                            stringsAsFactors = FALSE) 
+                            stringsAsFactors = FALSE) %>%
+  distinct(lagoslakeid)
 
-upstream_gauges_lakes_all <- inner_join(limno_tp_tn_2000, candidate_sites, by="lagoslakeid") #%>%
+WQ_data_sites <- inner_join(WQ_data, sites, by="lagoslakeid") %>%
+  rename(water_year = year) %>%
+  select(lagoslakeid,water_year,temp_degc_median, do_mgl_median,tp_ugl_median, tn_ugl_median )
   #distinct(station_id)
  # st_as_sf(coords= c("lon", "lat"),
        #    crs=4326)

@@ -13,7 +13,7 @@ library(patchwork)
 Nretention <- total_Nload %>%
   mutate(TN_removal_gNm2yr =(10^(-0.27 + (0.82 * log(totTNload_gm2yr)))))
 
-write.csv(Nretention, "data/Nretention_df.csv")
+write.csv(Nretention, "data/Nretention_df.csv") #34 sites
 
 Nretention_sp <- Nretention %>%
   st_as_sf(coords= c("lake_lon_decdeg", "lake_lat_decdeg"), crs= 4326)
@@ -42,12 +42,15 @@ Nretention_ts <- merge(Nretention, ts_hydro_us)%>%
 
 by(Nretention_ts,factor(Nretention_ts$categorical_ts),summary)
 
-g1 <- ggplot(Nretention_ts, aes(y=TN_removal_gNm2yr, x=categorical_ts)) +
-  geom_boxplot(aes(fill = categorical_ts), outlier.shape = NA)  + geom_jitter(height = 0, width = 0.1)+
-  scale_y_continuous(limits = quantile(Nretention_ts$TN_removal_gNm2yr, c(0.1, 0.9)))+
+g1 <- ggplot(Nretention_ts, aes(y=log(TN_removal_gNm2yr), x=categorical_ts)) +
+  geom_boxplot(aes(fill = categorical_ts), outlier.shape = NA, notch = FALSE)  + geom_jitter(height = 0, width = 0.1)+
+ # scale_y_continuous(limits = quantile(Nretention_ts$TN_removal_gNm2yr, c(0.1, 0.9)))+
+  #stat_summary(fun.y=mean, colour="black", geom="point",shape=16, size=4,show.legend = FALSE)+
+ # stat_summary(fun.y=median, colour="red", geom="point",shape=23, size=6,show.legend = FALSE)+
   scale_fill_manual(values=c("#009E73", "#56B4E9")) +
   ggtitle("Nremoval (gNm-2yr-1) based on ts")+
   theme_bw()
+
 
 #ggsave("figures/TN_retention_lakes-trophic-state.png", width=8, height=6,units="in", dpi=300)
 
@@ -69,6 +72,8 @@ Nretention_ts_sp <- Nretention_ts%>%
 Pretention_ts <- merge(upstream_Pconc_hydro_lt, ts_hydro_us)%>%
   na.omit()
 
+write.csv(upstream_Pconc_hydro_lt, "data/Pretention_df.csv") #24 sites
+
 by(Pretention_ts,factor(Pretention_ts$categorical_ts),summary)
 
 g2 <- ggplot(Pretention_ts, aes(y=Pret_coef, x=categorical_ts)) +
@@ -77,6 +82,12 @@ g2 <- ggplot(Pretention_ts, aes(y=Pret_coef, x=categorical_ts)) +
   scale_fill_manual(values=c("#009E73", "#56B4E9")) +
   ggtitle("Pretention coeficient based on ts")+
   theme_bw()
+
+oligo <- Pretention_ts %>%
+  filter(categorical_ts =="oligo") #n = 212
+
+eut <- Pretention_ts %>%
+  filter(categorical_ts =="eu/mixo") #n = 96 
 
 g1 + g2
 ggsave("figures/N-P-retention-TS.png", width=8, height=6,units="in", dpi=300)
@@ -88,8 +99,8 @@ test <- test %>%
 test_sp <- test %>%  
   st_as_sf(coords= c("lake_lon_decdeg", "lake_lat_decdeg"), crs= 4326)
 
-#write.csv(test, "data/final_retention_dataset.csv")
-library(plainview)
+write.csv(test, "data/final_retention_dataset.csv")
+#library(plainview)
 
 # mapview + object
-mapview(test_sp, zcol="TN_removal_gNm2yr", at = seq(0, 242094243, 5000), legend = TRUE) 
+#mapview(test_sp, zcol="TN_removal_gNm2yr", at = seq(0, 242094243, 5000), legend = TRUE) 

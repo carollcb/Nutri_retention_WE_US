@@ -4,7 +4,7 @@ library(ncdf4)
 library(raster)
 library(sp)
 
-study_sites <- read.csv("data/final_retention_dataset.csv")%>%
+study_sites <- read.csv("data/Nretention_df.csv")%>%
   distinct(lagoslakeid, .keep_all = TRUE)   %>%
   dplyr::select(lagoslakeid, lake_lon_decdeg,lake_lat_decdeg)%>%
   #st_as_sf(coords=c("lake_lon_decdeg", "lake_lat_decdeg"), crs=4326)

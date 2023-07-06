@@ -6,6 +6,8 @@ source("scripts/LAGOS_EDI.R")
 source('scripts/LAGOS_EDI_characteristics.R')
 source('scripts/09_calculating-TN-retention-timeseries.R')
 source('scripts/ice_data_Lute.R')
+#source('scripts/05_limno_data_time-series.R')
+source('scripts/lake_ts_Meyeretal-dataset.R')
 
 upstream_sites_lagos <- read.csv("data/upstream_sites_final.csv",
                                  colClasses = "character",
@@ -16,13 +18,13 @@ d_mm <- d_mm %>%
   mutate(lagoslakeid=as.character(lagoslakeid))
 
 study_sites_huc12 <- inner_join(upstream_sites_lagos, d_mm, by="lagoslakeid")%>%
-  select(lagoslakeid, hu12_zoneid, lake_elevation_m, lake_centroidstate)
+  dplyr::select(lagoslakeid, hu12_zoneid, lake_elevation_m, lake_centroidstate)
 
 
 ##weather data and elevation -> monthly precipitation and air temperature from LAGOS-GEO -> transforming to annual data
 #clim_data <- read.csv("/Users/carolinabarbosa/Dropbox/LAGOS_GEO/zone_climate_monthly.csv")%>%
   clim_data <- read.csv("C:/Users/cbarbosa/Dropbox/LAGOS_GEO/zone_climate_monthly.csv")%>%
-  select(zoneid,climate_year, climate_month, climate_tmean_degc, climate_ppt_mm)%>%
+  dplyr::select(zoneid,climate_year, climate_month, climate_tmean_degc, climate_ppt_mm)%>%
   rename(hu12_zoneid = zoneid)
 
 clim_data_sites <- inner_join(study_sites_huc12, clim_data, by="hu12_zoneid")%>%
@@ -71,13 +73,13 @@ glcp_data <- read.csv("D:/Datasets/Datasets/glcp.csv")%>%
   filter(year > '2000')
 
 glcp_sites <- right_join(glcp_data, hydrolakes_upstream_sites, by="Hylak_id")%>%
-  dplyr::select(lagoslakeid, year, total_precip_mm, mean_annual_temp_k,   pop_sum,seasonal_km2, permanent_km2, total_km2 )%>%
+  dplyr::select(lagoslakeid, year, total_precip_mm, mean_annual_temp_k, seasonal_km2, permanent_km2, total_km2 )%>%
   rename( water_year = year)%>%
   mutate(lagoslakeid = as.character(lagoslakeid))%>%
   distinct(total_km2, .keep_all = TRUE) 
 
-glcp_sites <- glcp_sites %>%
-  select(-pop_sum)
+#glcp_sites <- glcp_sites %>%
+ # select(-pop_sum)
 
 rm(glcp_data)
 
@@ -152,25 +154,20 @@ human_data_final <- human_data_lagos %>%
   pivot_wider(names_from = variable_name, values_from = value)
 
 rm(human_data)
-# Water quality - Lagos-Limno (had to not considere here. More NAs than values)
+# Water quality - Lagos-Limno-> WQ_data_sites from scripts/05_limno_data_time-series.R
 #sites <- upstream_sites_lagos %>%
  # select(lagoslakeid)
 #wq_data <- right_join(dt1_western_summary_2000s, sites, by="lagoslakeid")%>%
  # drop_na()
 #select(-year, -ton_ugl_median, -microcystin_ugl_median, -salinity_mgl_median)
+
   
 ##Ice/snow dynamics - snow climate metrics from Lute et al 2022 - scripts/ice_data_Lute.R
-#snow_dur <- st_read("shps/snow_duration_sites.shp")%>%
-#  as.data.frame()%>%
-#  distinct(lagoslakei, .keep_all = TRUE) %>%
-#  dplyr::select(lagoslakei, snowdur)%>%
-#  rename(lagoslakeid = lagoslakei)
-
 
 #Trophic state time-series? Check new Meyer et al dataset
 ts_hydro_us <- inner_join(dt1, hydrolakes_upstream_sites, by="Hylak_id")%>%
   filter(year > '2000' & year <'2016')  %>%
-  dplyr::select(lagoslakeid, year, categorical_ts, Pour_long, Pour_lat)%>%
+  dplyr::select(lagoslakeid, year, categorical_ts, mean_prob_dys, mean_prob_eumixo, mean_prob_oligo, Pour_long, Pour_lat)%>%
   rename(water_year = year)%>%
   mutate(lagoslakeid = as.character(lagoslakeid))%>%
   distinct(lagoslakeid,water_year, .keep_all = TRUE) 

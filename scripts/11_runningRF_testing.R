@@ -6,19 +6,16 @@ library(tidymodels)
 library(themis)
 library(ggthemes)
 library(missRanger)
+library(vip) 
 
-#data_all <- read.csv("data/data_all.csv")%>%
-data_all <- data_all %>%
-  #dplyr::select(-X, -lake_centroidstate )%>%
-  dplyr::select(-lake_centroidstate )#%>%
-  #mutate(TN_removal_gNm2yr.cat = ifelse(TN_removal_gNm2yr.cat == "Regular", "Expected", TN_removal_gNm2yr.cat))%>%
-  #mutate(Pret_coef.cat = ifelse(Pret_coef.cat == "Normal", "Expected", Pret_coef.cat))
+###For N retention ------------------------------------------------------------
 
 #getting data
-retention<-data_all %>%
-  na.omit()
+#data_all_TN <- read.csv("data/data_all_TN.csv")
 
-retention <- retention %>%
+N_retention<-data_all_TN %>%
+  drop_na()%>%
+#retention <- retention %>%
   mutate(across(contains("lakes1ha_"), as.numeric))%>%
   mutate(across(contains("soil_"), as.numeric))%>%
   mutate(across(contains("glaciatedlatewisc_pct"), as.numeric))%>%
@@ -30,23 +27,24 @@ retention <- retention %>%
   mutate(across(contains("sems_"), as.numeric))%>%
   mutate(across(contains("npdes_"), as.numeric))%>%
   mutate(across(contains("mines_"), as.numeric))%>%
+  mutate(across(contains("_median"), as.numeric))%>%
   mutate(categorical_ts=as.factor(categorical_ts))%>%
-  dplyr::select(-Pret_coef, -TN_removal_gNm2yr, -water_year, -mean_annual_temp_k, -tmedian, -prec_median)
+  dplyr::select(-TN_removal_gNm2yr, -water_year, -mean_annual_temp_k, -tmedian, -prec_median, -lake_centroidstate)
 
-str(retention)
+str(N_retention)
 #write.csv(retention, "data/covariates_list.csv")
-#The dataset contain 799 obs. of  167 variables. 
+#The dataset contain 258 obs. of  167 variables. 
 
 ###TN_removal_gNm2yr.cat considered as response variables. TN_removal_gNm2yr.cat variable should be a factor variable.
 
-retention$TN_removal_gNm2yr.cat <- as.factor(retention$TN_removal_gNm2yr.cat)
-table(retention$TN_removal_gNm2yr.cat) 
+N_retention$TN_removal_gNm2yr.cat <- as.factor(N_retention$TN_removal_gNm2yr.cat)
+table(N_retention$TN_removal_gNm2yr.cat) 
 
 #Lets start with random seed so the outcome will be repeatable and store train and test data.
 
-##From Bella's paper:
+##Baes on Bella's paper:
 set.seed(123)
-split_d <- initial_split(retention, strata = TN_removal_gNm2yr.cat, prop=0.60)
+split_d <- initial_split(N_retention, strata = TN_removal_gNm2yr.cat, prop=0.60)
 train_d <- training(split_d)%>%  mutate_if(is.numeric, round, digits=2) 
 test_d<- testing(split_d)%>%  mutate_if(is.numeric, round, digits=2) 
 ## I doubled checked and at least 25% of each Trend group is set aside for validation
@@ -134,7 +132,7 @@ library(gridExtra)
 vip_plot<-last_rf_fit %>% 
   pluck(".workflow", 1) %>%   
   extract_fit_parsnip() %>% 
-  vip(num_features = 15)+
+  vip(num_features = 11)+
   ggtitle("Variables importance score for TN retention")
 
 vip_plot
@@ -195,7 +193,7 @@ confMatRF<-confusionMatrix(
   factor(test_d$TN_removal_gNm2yr.cat)
 )
 
-confMatRF #accuracy: 0.823
+confMatRF #accuracy: 0.90
 
 #Plot CM
 # plt<-as.data.frame(confMatRF$table)
@@ -239,7 +237,7 @@ g1 <- ggplot(data = plotTableRF,
   theme(axis.title = element_blank(),
         axis.text.y=element_text(angle=45))+
    #labs(title = paste0("Accuracy: ",round(accuracy,2)))
-ggtitle("Confusion matrix for the testing data of the TN retention")
+ggtitle("Confusion matrix for the N retention")
 
 
 #g1 +  ROC
@@ -406,10 +404,9 @@ F<-  ggplot(retention, aes(x = TN_removal_gNm2yr.cat, y = mean_annual_temp_k, fi
 ###Pret_coef.cat considered as response variables. Pret_coef.cat variable should be a factor variable.
 
 #getting data
-retention<-data_all %>%
-  na.omit()
-
-retention <- retention %>%
+P_retention<-data_all_TP %>%
+  drop_na()%>%
+  #retention <- retention %>%
   mutate(across(contains("lakes1ha_"), as.numeric))%>%
   mutate(across(contains("soil_"), as.numeric))%>%
   mutate(across(contains("glaciatedlatewisc_pct"), as.numeric))%>%
@@ -421,14 +418,17 @@ retention <- retention %>%
   mutate(across(contains("sems_"), as.numeric))%>%
   mutate(across(contains("npdes_"), as.numeric))%>%
   mutate(across(contains("mines_"), as.numeric))%>%
+  mutate(across(contains("_median"), as.numeric))%>%
   mutate(categorical_ts=as.factor(categorical_ts))%>%
-  dplyr::select(-Pret_coef, -TN_removal_gNm2yr, -water_year, -mean_annual_temp_k, -tmedian, -prec_median)
+  dplyr::select(-water_year, -mean_annual_temp_k, -tmedian, -prec_median, -lake_centroidstate, -Pret_coef, -total_Pin_ugl)
 
-retention$Pret_coef.cat <- as.factor(retention$Pret_coef.cat)
-table(retention$Pret_coef.cat) 
+str(P_retention)
+
+P_retention$Pret_coef.cat <- as.factor(P_retention$Pret_coef.cat)
+table(P_retention$Pret_coef.cat) 
 
 set.seed(123)
-split_d <- initial_split(retention, strata = Pret_coef.cat, prop=0.60)
+split_d <- initial_split(P_retention, strata = Pret_coef.cat, prop=0.60)
 train_d <- training(split_d)%>%  mutate_if(is.numeric, round, digits=2) 
 test_d<- testing(split_d)%>%  mutate_if(is.numeric, round, digits=2) 
 ## I doubled checked and at least 25% of each Trend group is set aside for validation
@@ -511,12 +511,12 @@ last_rf_fit %>%
 #2 roc_auc  hand_till      0.993 Preprocessor1_Model1
 
 #Get VI scores
-library(vip)
+# ML global interpretation
 library(gridExtra)
 vip_plot2<-last_rf_fit %>% 
   pluck(".workflow", 1) %>%   
   extract_fit_parsnip() %>% 
-  vip(num_features = 15)+
+  vip(num_features = 11)+
   ggtitle("Variables importance score for TP retention")
 
 vip_plot2
@@ -576,7 +576,7 @@ confMatRF<-confusionMatrix(
   factor(test_d$Pret_coef.cat)
 )
 
-confMatRF #accuracy: 0.88
+confMatRF #accuracy: 0.74
 
 #Plot CM
 # plt<-as.data.frame(confMatRF$table)
@@ -620,7 +620,7 @@ g2 <- ggplot(data = plotTableRF,
   theme(axis.title = element_blank(),
         axis.text.y=element_text(angle=45))+
 #labs(title = paste0("Accuracy: ",round(accuracy,2)))+
-ggtitle("Confusion matrix for the testing data of the TP retention")
+ggtitle("Confusion matrix for the P retention")
 
 
 #g2 +  ROC
@@ -633,3 +633,147 @@ ggsave("figures/vip_plot.png", width=8, height=6,units="in", dpi=300)
 
 ROC / ROC2
 ggsave("figures/ROC_plot.png", width=8, height=6,units="in", dpi=300)
+
+##Using lime package to better interpreter the results and running another test --------------------- Don't need to run from here on
+library(lime)       # ML local interpretation
+library(pdp)        # ML global interpretation
+library(h2o)
+library(ggplot2)
+
+h2o.init()
+
+
+P_retention_lime<-data_all_TP %>%
+  drop_na()%>%
+  #retention <- retention %>%
+  mutate(across(contains("lakes1ha_"), as.numeric))%>%
+  mutate(across(contains("soil_"), as.numeric))%>%
+  mutate(across(contains("glaciatedlatewisc_pct"), as.numeric))%>%
+  mutate(across(contains("elevation_"), as.numeric))%>%
+  mutate(across(contains("tri_m"), as.numeric))%>%
+  mutate(across(contains("topographicwetness"), as.numeric))%>%
+  mutate(across(contains("landform_"), as.numeric))%>%
+  mutate(across(contains("dams_"), as.numeric))%>%
+  mutate(across(contains("sems_"), as.numeric))%>%
+  mutate(across(contains("npdes_"), as.numeric))%>%
+  mutate(across(contains("mines_"), as.numeric))%>%
+  mutate(across(contains("_median"), as.numeric))%>%
+  mutate(categorical_ts=as.factor(categorical_ts))%>%
+  dplyr::select(-water_year, -mean_annual_temp_k, -tmedian, -prec_median, -lake_centroidstate, -lagoslakeid)
+
+P_retention_lime$Pret_coef.cat <- as.factor(P_retention_lime$Pret_coef.cat)
+
+str(P_retention_lime)
+# create h2o objects for modeling
+index <- 1:100
+train_obs <- P_retention_lime[-index, ]
+local_obs <- P_retention_lime[index, ]
+
+y <- "Pret_coef.cat"
+x <- setdiff(names(train_obs), y)
+train_obs.h2o <- as.h2o(train_obs)
+local_obs.h2o <- as.h2o(local_obs)
+
+fit.caret <- train(
+  Pret_coef.cat ~ ., 
+  data = train_obs, 
+  method = 'ranger',
+  trControl = trainControl(method = "cv", number = 5, classProbs = TRUE),
+  tuneLength = 1,
+  importance = 'impurity'
+)
+
+# create h2o models
+h2o_rf <- h2o.randomForest(x, y, training_frame = train_obs.h2o)
+h2o_glm <- h2o.glm(x, y, training_frame = train_obs.h2o, family = "binomial")
+h2o_gbm <- h2o.gbm(x, y, training_frame = train_obs.h2o)
+
+fit.ranger <- ranger::ranger(
+  Pret_coef.cat ~ ., 
+  data = train_obs, 
+  importance = 'impurity',
+  probability = TRUE
+)
+
+##Global interpretation
+#Variable importance quantifies the global contribution of each input variable to the predictions of a machine learning model. 
+#Variable importance measures rarely give insight into the average direction that a variable affects a response function. They simply state the magnitude of a variable’s relationship with the response as compared to other variables used in the model.
+
+vip(fit.ranger) + ggtitle("ranger: RF")
+
+#After the most globally relevant variables have been identified, the next step is to attempt to understand how the response variable changes based on these variables. 
+#For this we can use partial dependence plots (PDPs) and individual conditional expectation (ICE) curves. These techniques plot the change in the predicted value as specified feature(s) vary over their marginal distribution. Consequently, we can gain some local understanding how the reponse variable changes across the distribution of a particular variable but this still only provides a global understanding of this relationships across all observed data.
+
+# built-in PDP support in H2O (it didn't work)
+h2o.partialPlot(h2o_rf, data = train_obs.h2o, cols = "totTNload_gm2yr")
+
+fit.ranger %>%
+  partial(pred.var = "total_Pin_ugl", grid.resolution = 25, ice = TRUE) %>%
+  autoplot(rug = TRUE, train = train_obs, alpha = 0.1, center = TRUE)
+
+#lime (local interpretation)
+explainer_caret <- lime(train_obs, fit.caret, n_bins = 5)
+class(explainer_caret)
+summary(explainer_caret)
+
+explanation_caret <- explain(
+  local_obs, 
+  explainer_caret, 
+  n_permutations = 5000,
+  dist_fun = "gower",
+  kernel_width = .75,
+  n_features = 5, 
+  feature_select = "highest_weights",
+  labels = "Yes"
+)
+
+tibble::glimpse(explanation_caret)
+
+plot_explanations(explanation_caret)
+
+# tune LIME algorithm
+explanation_caret <- explain(
+  x = local_obs, 
+  explainer = explainer_caret, 
+  n_permutations = 500,
+  dist_fun = "manhattan",
+  kernel_width = 3,
+  n_features = 10, 
+  feature_select = "lasso_path",
+  labels = "Yes"
+)
+
+plot_explanations(explanation_caret)
+
+#supported models
+# get the model class
+class(fit.ranger)
+## [1] "ranger"
+
+# need to create custom model_type function
+model_type.ranger <- function(x, ...) {
+  # Function tells lime() what model type we are dealing with
+  # 'classification', 'regression', 'survival', 'clustering', 'multilabel', etc
+  
+  return("classification")
+}
+
+model_type(fit.ranger)
+## [1] "classification"
+
+# need to create custom predict_model function
+predict_model.ranger <- function(x, newdata, ...) {
+  # Function performs prediction and returns data frame with Response
+  pred <- predict(x, newdata)
+  return(as.data.frame(pred$predictions))
+}
+
+predict_model(fit.ranger, newdata = local_obs)
+
+explainer_ranger <- lime(train_obs, fit.ranger, n_bins = 5)
+explanation_ranger <- explain(local_obs, explainer_ranger, n_features = 5, n_labels = 2, kernel_width = .1)
+plot_explanations(explanation_ranger, ncol = 2) + ggtitle("Local interpretation based on the VI values")+
+  theme(axis.text.x=element_blank(),
+        axis.ticks.x=element_blank() 
+  )
+  

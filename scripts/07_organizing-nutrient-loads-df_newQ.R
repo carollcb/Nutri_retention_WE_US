@@ -19,7 +19,10 @@ for(c in 1:length(list_files)) {
            id = gsub('/loadflex.csv','',id))
   
   TNP <- bind_rows(TNP, tmp) # bind into a single dataframe
-}
+  }
+
+#TNP <- TNP %>% 
+ # drop_na()
 
 ##yearly loads data
 
@@ -33,6 +36,7 @@ nutrient_loads_lagos <- inner_join(upstream_sites_lagos,
 ##long-term loads data
 
 lt_nutrient_loads_lagos <- TNP %>%
+  drop_na() %>%
   rename(station_id = id)%>%
   group_by(station_id) %>%
   summarise(lt_fluxTP_kgy = median(flux_TP_kgy),
@@ -40,6 +44,13 @@ lt_nutrient_loads_lagos <- TNP %>%
             lt_fluxTN_kgy = median(flux_TN_kgy),
             lt_fluxTN_kgy_se = median(flux_TN_kgy_se, na.rm = T)) %>%
   inner_join(upstream_sites_lagos, by= "station_id")
+
+lt_nutrient_loads_lagos_table <- lt_nutrient_loads_lagos %>%
+  group_by(lagoslakeid)%>%
+  summarise(lt_fluxTN_kgy_all = sum(lt_fluxTN_kgy), lt_fluxTP_kgy_all = sum(lt_fluxTP_kgy))#%>%
+ # drop_na()
+
+#write.csv(lt_nutrient_loads_lagos_table, "data/lt_TN_TP_loads.csv")
 
 
 phosphorus_loads <- nutrient_loads_lagos
