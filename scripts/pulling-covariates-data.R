@@ -54,10 +54,10 @@ rm(clim_data)
 ##Connectivity metrics from LAGOS-GEO - Check why I deleted many connectivity metrics here.
 #connect_data <- read.csv("/Users/carolinabarbosa/Dropbox/LAGOS_GEO/zone_connectivity.csv")%>%
   connect_data <- read.csv("C:/Users/cbarbosa/Dropbox/LAGOS_GEO/zone_connectivity.csv")%>% 
-  filter(spatial_division == 'hu12')%>%
+  filter(spatial_division == 'hu12' & spatial_division == 'buff500')%>%
   rename(hu12_zoneid = zoneid)
 
-connect_data_lagos <- inner_join(study_sites_huc12, connect_data, by= "hu12_zoneid")%>%
+connect_data_lagos <- inner_join(study_sites_huc12, connect_data, by= "hu12_zoneid")%>% #buff500_zoneid
   dplyr::select(lagoslakeid, hu12_zoneid, variable_name, value, main_feature )%>%
   filter(main_feature == "lakes1ha")%>%
   mutate(lagoslakeid=as.character(lagoslakeid))
