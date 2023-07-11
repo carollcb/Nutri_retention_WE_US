@@ -17,14 +17,14 @@ upstream_sites_lagos <- read.csv("data/upstream_sites_final.csv",
 d_mm <- d_mm %>% 
   mutate(lagoslakeid=as.character(lagoslakeid))
 
-study_sites_huc12 <- inner_join(upstream_sites_lagos, d_mm, by="lagoslakeid")%>%
-  dplyr::select(lagoslakeid, hu12_zoneid, lake_elevation_m, lake_centroidstate)
+study_sites_huc12_buff500 <- inner_join(upstream_sites_lagos, d_mm, by="lagoslakeid")%>%
+  dplyr::select(lagoslakeid, hu12_zoneid, buff500_zoneid, lake_elevation_m, lake_centroidstate)
 
 
 ##weather data and elevation -> monthly precipitation and air temperature from LAGOS-GEO -> transforming to annual data
 #clim_data <- read.csv("/Users/carolinabarbosa/Dropbox/LAGOS_GEO/zone_climate_monthly.csv")%>%
  # clim_data <- read.csv("C:/Users/cbarbosa/Dropbox/LAGOS_GEO/zone_climate_monthly.csv")%>%
-    clim_data <- read.csv("D:/Datasets/Datasets/LAGOS_GEO/zone_climate_monthly.csv")%>% 
+    clim_data <- read.csv("/Volumes/Seagate Portable Drive/Datasets/Datasets/LAGOS_GEO/zone_climate_monthly.csv")%>% 
   dplyr::select(zoneid,climate_year, climate_month, climate_tmean_degc, climate_ppt_mm)%>%
   rename(hu12_zoneid = zoneid)
 
@@ -53,26 +53,41 @@ rm(clim_data)
                #names_sep = '-')
 
 ##Connectivity metrics from LAGOS-GEO - Check why I deleted many connectivity metrics here.
-connect_data <- read.csv("D:/Datasets/Datasets/LAGOS_GEO/zone_connectivity.csv") #spatial_division == 'buff500'
+connect_data <- read.csv("/Volumes/Seagate Portable Drive/Datasets/Datasets/LAGOS_GEO/zone_connectivity.csv") %>%
+  filter(spatial_division == 'buff500')
 
-connect_data2 <- connect_data %>%
- # connect_data <- read.csv("C:/Users/cbarbosa/Dropbox/LAGOS_GEO/zone_connectivity.csv")%>% 
+connect_data_lagos <- inner_join(study_sites_huc12_buff500, connect_data2, by= "buff500_zoneid")%>% #buff500_zoneid
+  dplyr::select(lagoslakeid, buff500_zoneid, variable_name, value, main_feature )%>%
+ # filter(main_feature == "lakes1ha")%>%
+  mutate(lagoslakeid=as.character(lagoslakeid))
+
+connect_data_lagos_streams <- connect_data_lagos %>%
+  pivot_wider(names_from = variable_name, values_from = value) %>% 
+dplyr::select(-main_feature, -buff500_zoneid)
+
+connect_data_hu12 <- read.csv("/Volumes/Seagate Portable Drive/Datasets/Datasets/LAGOS_GEO/zone_connectivity.csv") %>%
   filter(spatial_division == 'hu12')%>%
   rename(hu12_zoneid = zoneid)
 
-connect_data_lagos <- inner_join(study_sites_huc12, connect_data2, by= "hu12_zoneid")%>% #buff500_zoneid
+connect_data_lagos <- inner_join(study_sites_huc12_buff500, connect_data_hu12, by= "hu12_zoneid")%>% #buff500_zoneid
   dplyr::select(lagoslakeid, hu12_zoneid, variable_name, value, main_feature )%>%
-  filter(main_feature == "lakes1ha")%>%
+   #filter(main_feature == "lakes1ha")%>%
   mutate(lagoslakeid=as.character(lagoslakeid))
 
-connect_data_lagos_final <- connect_data_lagos %>%
+connect_data_lagos_hu12 <- connect_data_lagos %>%
   pivot_wider(names_from = variable_name, values_from = value) %>% 
-dplyr::select(-main_feature, -hu12_zoneid)
-       
-rm(connect_data)
+  dplyr::select(-main_feature, -hu12_zoneid)%>%
+distinct(lagoslakeid, .keep_all = TRUE)%>%
+  #dplyr::select(lakes1ha_all_ha, lakes1ha_all_nperha, lakes4ha_all_ha, lakes4ha_all_nperha, lakes10ha_all_ha, lakes10ha_all_nperha)
+  dplyr::select(lagoslakeid, lakes1ha_all_nperha, lakes1ha_drainage_nperha,lakes1ha_drainagelk_nperha, lakes1ha_headwater_nperha, lakes1ha_isolated_nperha, lakes1ha_terminal_nperha, lakes1ha_terminallk_nperha)
+
+#connect_data_final <- inner_join(connect_data_lagos_streams, connect_data_lagos_hu12, by="lagoslakeid")
+
+#rm(connect_data)
+rm(connect_data_hu12)
 
 ##GLCP from Meyer et al 2020 (lake surface area, temp, precp and population between 1995-2015)
-glcp_data <- read.csv("D:/Datasets/Datasets/glcp.csv")%>%
+glcp_data <- read.csv("/Volumes/Seagate Portable Drive/Datasets/Datasets/glcp.csv")%>%
   filter(year > '2000')
 
 glcp_sites <- right_join(glcp_data, hydrolakes_upstream_sites, by="Hylak_id")%>%
@@ -87,12 +102,11 @@ glcp_sites <- right_join(glcp_data, hydrolakes_upstream_sites, by="Hylak_id")%>%
 rm(glcp_data)
 
 ##LULC: From LAGOS-GEO (zone_landuse.csv only for 2016?) class legend: https://www.mrlc.gov/data/legends/national-land-cover-database-class-legend-and-description 
-lulc_data <- read.csv("C:/Users/cbarbosa/Dropbox/LAGOS_GEO/zone_landuse.csv")%>% 
-  filter(spatial_division == 'hu12')%>%
-  rename(hu12_zoneid = zoneid)
+lulc_data <- read.csv("/Volumes/Seagate Portable Drive/Datasets/Datasets/LAGOS_GEO/zone_landuse.csv")%>% 
+  filter(spatial_division == 'buff500')%>% #'hu12'
+  rename(buff500_zoneid = zoneid)
 
-  
-lulc_data_lagos <- merge(study_sites_huc12, lulc_data)%>%
+lulc_data_lagos <- merge(study_sites_huc12_buff500, lulc_data)%>%
   rename(water_year = year)
   
 lulc_median_lagos <- lulc_data_lagos %>%
@@ -112,18 +126,18 @@ lulc_median_lagos <- lulc_median_lagos %>%
 rm(lulc_data)
 
 ##Soils from LAGOS-GEO? 
-soils_data <- read.csv("C:/Users/cbarbosa/Dropbox/LAGOS_GEO/zone_soils.csv")%>% 
-  filter(spatial_division == 'hu12')%>%
-  rename(hu12_zoneid = zoneid)
+soils_data <- read.csv("/Volumes/Seagate Portable Drive/Datasets/Datasets/LAGOS_GEO/zone_soils.csv")%>% 
+  filter(spatial_division == 'buff500')%>%
+  rename(buff500_zoneid = zoneid)
 
-soils_data_lagos <- inner_join(study_sites_huc12, soils_data, by= "hu12_zoneid")%>%
-  dplyr::select(lagoslakeid, hu12_zoneid, variable_name, value, main_feature )%>%
+soils_data_lagos <- inner_join(study_sites_huc12_buff500, soils_data, by= "buff500_zoneid")%>%
+  dplyr::select(lagoslakeid, variable_name, value, main_feature )%>%
   mutate(lagoslakeid=as.character(lagoslakeid))
 
 soils_data_lagos_final <- soils_data_lagos %>%
   pivot_wider(names_from = variable_name, values_from = value) %>%
-  filter(main_feature == "soil")%>%
-  select(lagoslakeid, soil_clay_pct, soil_coarse_pct, soil_depthtobedrock_cm, soil_orgcarbon_gperkg, soil_sand_pct,soil_silt_pct)
+  filter(main_feature == "lith")#%>%
+ # select(lagoslakeid, soil_clay_pct, soil_coarse_pct, soil_depthtobedrock_cm, soil_orgcarbon_gperkg, soil_sand_pct,soil_silt_pct)
     #ready to merge with data/final_retention_dataset.csv
 
 rm(soils_data)
@@ -131,11 +145,11 @@ rm(soils_data)
 #rm(soils_data)
 
 ##Terrain/landforms from LAGOS-GEO (zone_terrain.csv) -> cHECK ELEVATION data here!
-terrain_data <- read.csv("/Users/cbarbosa/Dropbox/LAGOS_GEO/zone_terrain.csv")%>%
-filter(spatial_division == 'hu12')%>%
-  rename(hu12_zoneid = zoneid)
+terrain_data <- read.csv("/Volumes/Seagate Portable Drive/Datasets/Datasets/LAGOS_GEO/zone_terrain.csv")%>%
+filter(spatial_division == 'buff500')%>%
+  rename(buff500_zoneid = zoneid)
 
-terrain_data_lagos <- inner_join(study_sites_huc12, terrain_data, by= "hu12_zoneid")
+terrain_data_lagos <- inner_join(study_sites_huc12_buff500, terrain_data, by= "buff500_zoneid")
 
 terrain_data_final <- terrain_data_lagos %>%
   select(lagoslakeid, variable_name, value)%>%
@@ -145,16 +159,17 @@ terrain_data_final <- terrain_data_lagos %>%
 rm(terrain_data)
 
 ##Human activities from LAGOS-GEO (zone_human.csv)
-human_data <- read.csv("/Users/cbarbosa/Dropbox/LAGOS_GEO/zone_human.csv")%>%
-  filter(spatial_division == 'hu12')%>%
-  rename(hu12_zoneid = zoneid)
+human_data <- read.csv("/Volumes/Seagate Portable Drive/Datasets/Datasets/LAGOS_GEO/zone_human.csv")%>%
+  filter(spatial_division == 'buff500')%>%
+  rename(buff500_zoneid = zoneid)
 
-human_data_lagos <- inner_join(study_sites_huc12, human_data, by= "hu12_zoneid")
+human_data_lagos <- inner_join(study_sites_huc12_buff500, human_data, by= "buff500_zoneid")
 
 human_data_final <- human_data_lagos %>%
-  select(lagoslakeid, variable_name, value)%>%
+  dplyr::select(lagoslakeid, variable_name, value)%>%
   group_by(lagoslakeid)%>%
-  pivot_wider(names_from = variable_name, values_from = value)
+  pivot_wider(names_from = variable_name, values_from = value)%>%
+  dplyr::select(lagoslakeid, dams_n, dams_npersqkm, roads_mperha, canals_mperha)
 
 rm(human_data)
 # Water quality - Lagos-Limno-> WQ_data_sites from scripts/05_limno_data_time-series.R
