@@ -4,6 +4,7 @@ library(tidyverse)
 library(patchwork)
 
 ####RF for N retention ------------------------------------------------------------------------
+data_all_TN <- read.csv("data/data_all_TN.csv")
 N_retention<-data_all_TN %>%
   drop_na()%>%
   mutate(TN_removal_gNm2yr_log = log(TN_removal_gNm2yr))%>%

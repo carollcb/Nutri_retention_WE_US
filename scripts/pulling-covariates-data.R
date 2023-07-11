@@ -23,7 +23,8 @@ study_sites_huc12 <- inner_join(upstream_sites_lagos, d_mm, by="lagoslakeid")%>%
 
 ##weather data and elevation -> monthly precipitation and air temperature from LAGOS-GEO -> transforming to annual data
 #clim_data <- read.csv("/Users/carolinabarbosa/Dropbox/LAGOS_GEO/zone_climate_monthly.csv")%>%
-  clim_data <- read.csv("C:/Users/cbarbosa/Dropbox/LAGOS_GEO/zone_climate_monthly.csv")%>%
+ # clim_data <- read.csv("C:/Users/cbarbosa/Dropbox/LAGOS_GEO/zone_climate_monthly.csv")%>%
+    clim_data <- read.csv("D:/Datasets/Datasets/LAGOS_GEO/zone_climate_monthly.csv")%>% 
   dplyr::select(zoneid,climate_year, climate_month, climate_tmean_degc, climate_ppt_mm)%>%
   rename(hu12_zoneid = zoneid)
 
@@ -52,12 +53,14 @@ rm(clim_data)
                #names_sep = '-')
 
 ##Connectivity metrics from LAGOS-GEO - Check why I deleted many connectivity metrics here.
-#connect_data <- read.csv("/Users/carolinabarbosa/Dropbox/LAGOS_GEO/zone_connectivity.csv")%>%
-  connect_data <- read.csv("C:/Users/cbarbosa/Dropbox/LAGOS_GEO/zone_connectivity.csv")%>% 
-  filter(spatial_division == 'hu12' & spatial_division == 'buff500')%>%
+connect_data <- read.csv("D:/Datasets/Datasets/LAGOS_GEO/zone_connectivity.csv") #spatial_division == 'buff500'
+
+connect_data2 <- connect_data %>%
+ # connect_data <- read.csv("C:/Users/cbarbosa/Dropbox/LAGOS_GEO/zone_connectivity.csv")%>% 
+  filter(spatial_division == 'hu12')%>%
   rename(hu12_zoneid = zoneid)
 
-connect_data_lagos <- inner_join(study_sites_huc12, connect_data, by= "hu12_zoneid")%>% #buff500_zoneid
+connect_data_lagos <- inner_join(study_sites_huc12, connect_data2, by= "hu12_zoneid")%>% #buff500_zoneid
   dplyr::select(lagoslakeid, hu12_zoneid, variable_name, value, main_feature )%>%
   filter(main_feature == "lakes1ha")%>%
   mutate(lagoslakeid=as.character(lagoslakeid))
