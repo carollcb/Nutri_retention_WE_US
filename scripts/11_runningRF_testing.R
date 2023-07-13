@@ -15,6 +15,7 @@ library(vip)
 
 N_retention<-data_all_TN %>%
   drop_na()%>%
+  mutate(TN_removal_gNm2yr_log = log(TN_removal_gNm2yr))%>%
 #retention <- retention %>%
   mutate(across(contains("lakes1ha_"), as.numeric))%>%
   mutate(across(contains("soil_"), as.numeric))%>%
@@ -29,7 +30,7 @@ N_retention<-data_all_TN %>%
   mutate(across(contains("mines_"), as.numeric))%>%
   mutate(across(contains("_median"), as.numeric))%>%
   mutate(categorical_ts=as.factor(categorical_ts))%>%
-  dplyr::select(-TN_removal_gNm2yr, -water_year, -mean_annual_temp_k, -tmedian, -prec_median, -lake_centroidstate)
+  dplyr::select(-TN_removal_gNm2yr.cat, -water_year, -mean_annual_temp_k, -tmedian, -prec_median, -lake_centroidstate)
 
 str(N_retention)
 #write.csv(retention, "data/covariates_list.csv")
