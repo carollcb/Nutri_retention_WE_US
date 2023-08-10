@@ -15,7 +15,7 @@ source("scripts/07_organizing-nutrient-loads-df_newQ.R")
 source("scripts/LAGOS_EDI.R")
 
 #For TP loads
-TP_loads_ts <- nutrient_loads_lagos %>%
+TP_loads_ts <- nutrient_loads_lagos_TP %>%
   group_by(lagoslakeid, water_year)%>%
   dplyr::mutate(total_fluxTP_kgy = sum(fluxTP_kgy))%>%
   dplyr::select(station_id, lagoslakeid, water_year, total_fluxTP_kgy) %>%
@@ -25,7 +25,7 @@ TP_loads_ts <- nutrient_loads_lagos %>%
 
 
 #For TN loads
-TN_loads_ts <- nutrient_loads_lagos %>%
+TN_loads_ts <- nutrient_loads_lagos_TN %>%
   group_by(lagoslakeid, water_year)%>%
   dplyr::mutate(total_fluxTN_kgy = sum(fluxTN_kgy))%>%
   dplyr::select(station_id, lagoslakeid, water_year, total_fluxTN_kgy) %>%
@@ -250,8 +250,8 @@ ts_TPtrends_lakes <- left_join(upstream_sites_lagos, nutrient_loads_unnested, by
   distinct()%>%
   na.omit()
 
-filter(ts_TNtrends_lakes, Trend == "increasing")
-filter(ts_TPtrends_lakes, Trend == "increasing")
+filter(ts_TNtrends_lakes, Trend == "no trend")
+filter(ts_TPtrends_lakes, Trend == "no trend")
 
 d_mm <- d_mm %>%
   mutate(lagoslakeid= as.character(lagoslakeid))
@@ -266,7 +266,7 @@ ts_TPtrends_lakes_sp <- left_join(d_mm, ts_TPtrends_lakes, by="lagoslakeid")%>%
             crs=4326) %>%
   filter(!Trend=="no trend") 
 
-mapview(ts_TNtrends_lakes_sp, zcol = "Trend") 
+mapview(ts_TPtrends_lakes_sp, zcol = "Trend") 
 
 
 

@@ -45,13 +45,18 @@ lt_nutrient_loads_lagos <- TNP %>%
             lt_fluxTN_kgy_se = median(flux_TN_kgy_se, na.rm = T)) %>%
   inner_join(upstream_sites_lagos, by= "station_id")
 
+#QAQC
 lt_nutrient_loads_lagos_table <- lt_nutrient_loads_lagos %>%
   group_by(lagoslakeid)%>%
-  summarise(lt_fluxTN_kgy_all = sum(lt_fluxTN_kgy), lt_fluxTP_kgy_all = sum(lt_fluxTP_kgy))#%>%
+  summarise(lt_fluxTN_kgy_all = sum(lt_fluxTN_kgy), lt_fluxTN_kgy_all_se = sum(lt_fluxTN_kgy_se), lt_fluxTP_kgy_all = sum(lt_fluxTP_kgy), lt_fluxTP_kgy_all_se = sum(lt_fluxTP_kgy_se))%>%
  # drop_na()
+mutate(error_TN = lt_fluxTN_kgy_all_se/lt_fluxTN_kgy_all, error_TP = lt_fluxTP_kgy_all_se/ lt_fluxTP_kgy_all)
 
-#write.csv(lt_nutrient_loads_lagos_table, "data/lt_TN_TP_loads.csv")
+nutrient_loads_lagos_TN <- nutrient_loads_lagos %>%
+  filter(lagoslakeid != "367583")
 
+nutrient_loads_lagos_TP <- nutrient_loads_lagos %>%
+  filter(lagoslakeid != "447960" & lagoslakeid != "454811")
 
-phosphorus_loads <- nutrient_loads_lagos
-nitrogen_loads <- nutrient_loads_lagos
+phosphorus_loads <- nutrient_loads_lagos_TP
+nitrogen_loads <- nutrient_loads_lagos_TN

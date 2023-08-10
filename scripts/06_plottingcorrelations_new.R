@@ -21,7 +21,7 @@ upstream_sites_lagos <- read.csv("data/upstream_sites_final.csv",
 
 
 #I've joined hydrolakes and LAGOS in QGis - 
-hydrolakes_lagos <- st_read("D:/nutri_ret_shps/joined_hydrolakes_lagos_Final.shp") %>% 
+hydrolakes_lagos <- st_read("/Volumes/Seagate Portable Drive/nutri_ret_shps/joined_hydrolakes_lagos_Final.shp") %>% 
   rename(lagoslakeid = lagoslakei)%>%
   mutate(lagoslakeid = as.character(lagoslakeid))%>%
   mutate(res_time_yr = Res_time/365)
@@ -38,11 +38,11 @@ hydrolakes_upstream_sites <- inner_join(upstream_sites_lagos, hydrolakes_lagos, 
  # data.table::rbindlist()%>%
 #  mutate(flow_station_id = as.character(flow_station_id))
 
-nitrogen_loads_lt <- nutrient_loads_lagos %>%
+nitrogen_loads_lt <- nutrient_loads_lagos_TN %>%
   group_by(station_id) %>%
   summarise(lt_flux_kgy = median(fluxTN_kgy))
 
-P_discharge_lt <- nutrient_loads_lagos %>%
+P_discharge_lt <- nutrient_loads_lagos_TP %>%
   group_by(flow_station_id) %>%
   summarise(lt_flow_m3y = median(flow_m3y))
 
@@ -63,10 +63,9 @@ P_discharge_lt <- nutrient_loads_lagos %>%
 #Plotting residence time (yr, y axis) x inflow P conc (x axis, µg l−1)
 
 #new calculus
-TP_data_test <- TNP %>%
-  rename(station_id = id)%>%
+TP_data_test <- nutrient_loads_lagos_TP %>%
   group_by(station_id, water_year) %>%
-  summarize(Pin_ugl = (flux_TP_kgy/flow_m3y)*1000000)
+  summarize(Pin_ugl = (fluxTP_kgy/flow_m3y)*1000000)
 
 TP_data_new <- nutrient_loads_lagos %>%
   group_by(flow_station_id) %>%
@@ -79,7 +78,7 @@ upstream_conc_hydro_final <- inner_join(hydrolakes_upstream_sites, TP_data_test,
 #Hejzlar says this number is something between 0.02 and 0.96 -> check that!
 #upstream_Pconc_hydro_nooutl <- upstream_conc_hydro_final[-(c(80,85)),]
 
-P_loads_lt <- nutrient_loads_lagos %>%
+P_loads_lt <- nutrient_loads_lagos_TP %>%
   group_by(lagoslakeid, water_year) %>%
   summarise(lt_flux_kgy = median(fluxTP_kgy))
 

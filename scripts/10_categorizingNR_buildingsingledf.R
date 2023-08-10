@@ -42,7 +42,7 @@ upper_fence <- Q3 + 1.5 * IQR
 data_all_TN <- data_all_TN %>%
   dplyr::filter(TN_removal_gNm2yr >= lower_fence & TN_removal_gNm2yr <= upper_fence)
 
-write.csv(data_all_TN, "data/data_all_TN.csv") #948 obs of 175 variables -> 348 obs of 175 variables -> 348 obs of 189 variab -> 283 of 63 vari
+write.csv(data_all_TN, "data/data_all_TN_new.csv") #948 obs of 175 variables -> 348 obs of 175 variables -> 348 obs of 189 variab -> 283 of 63 vari
 
 ##Reading final dataset for TP ---------------------
 
@@ -79,4 +79,4 @@ upper_fence <- Q3 + 1.5 * IQR
 data_all_TP <- data_all_TP %>%
   dplyr::filter(Pret_coef >= lower_fence & Pret_coef <= upper_fence)
 
-write.csv(data_all_TP, "data/data_all_TP.csv") # 843 obs of 177 variables -> 259 obs of 177 variables -> 272 obs of 191 variables -> 267 obs of 65 variab
+write.csv(data_all_TP, "data/data_all_TP_new.csv") # 843 obs of 177 variables -> 259 obs of 177 variables -> 272 obs of 191 variables -> 267 obs of 65 variab

@@ -25,13 +25,13 @@ ggplot(Nretention_sp, aes(x=totTNload_gm2yr, y=TN_removal_gNm2yr)) +
 ##----Merging Hydrolakes coord and Meyer et 2023 dataset
 #hydrol_us <- st_read("D:/Datasets/Datasets/HydroLAKES_polys_v10_shp/HydroLAKES_polys_v10.shp")
 #hydrol_us <- st_read("shps/joined_hydrolakes_lagos_Final.shp")
-hydrol_us <- st_read("D:/nutri_ret_shps/joined_hydrolakes_lagos_Final.shp")
+#hydrol_us <- st_read("D:/nutri_ret_shps/joined_hydrolakes_lagos_Final.shp")
 
-hydrol_tot <- as.data.frame(hydrol_us)
+hydrol_tot <- as.data.frame(hydrolakes_upstream_sites)
 
 ts_hydro_us <- inner_join(dt1, hydrol_tot, by="Hylak_id")%>%
-  dplyr::select(Hylak_id,lagoslakei, year, categorical_ts, Lake_name, Pour_long, Pour_lat)%>%
-  rename(lagoslakeid = lagoslakei, water_year = year)%>%
+  dplyr::select(Hylak_id,lagoslakeid, year, categorical_ts, Lake_name, Pour_long, Pour_lat)%>%
+  rename( water_year = year)%>%
   mutate(lagoslakeid = as.character(lagoslakeid))
   #st_as_sf(coords= c("Pour_long", "Pour_lat"), crs= 4326)
 
