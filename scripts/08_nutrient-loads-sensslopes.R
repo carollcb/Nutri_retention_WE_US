@@ -266,8 +266,39 @@ ts_TPtrends_lakes_sp <- left_join(d_mm, ts_TPtrends_lakes, by="lagoslakeid")%>%
             crs=4326) %>%
   filter(!Trend=="no trend") 
 
-mapview(ts_TPtrends_lakes_sp, zcol = "Trend") 
+ts_TPtrends_lakes_sp_2 <- right_join(d_mm, ts_TPtrends_lakes, by="lagoslakeid")%>%
+  st_as_sf( coords= c("lake_lon_decdeg", "lake_lat_decdeg"),
+            crs=4326)  
+
+ts_TNtrends_lakes_sp_2 <- right_join(d_mm, ts_TNtrends_lakes, by="lagoslakeid")%>%
+  st_as_sf( coords= c("lake_lon_decdeg", "lake_lat_decdeg"),
+            crs=4326) 
+
+map_TP <- mapview(ts_TPtrends_lakes_sp_2, zcol = "Trend")
+map_TN <- mapview(ts_TNtrends_lakes_sp_2, zcol = "Trend")
 
 
+p <- ggmap(get_stamenmap(bbox=c(-125, 25, -100, 50), zoom = 5, 
+                         maptype='terrain-background'))
+
+map_TP <- p+
+  #geom_point(data = ts_TPtrends_lakes_sp_2, aes(x = lake_lon_decdeg, y = lake_lat_decdeg, color= Trend), shape=18, size=3)+
+  geom_point(data = ts_TNtrends_lakes_sp_2, aes(x = lake_lon_decdeg, y = lake_lat_decdeg, color= Trend), shape=18, size=3)+
+  # ggtitle("Study sites location and elevation in meters")+
+  labs(x= "longitude", y="latitude", color = "Legend")+
+  ggtitle("TP trends") +
+  scale_color_manual(values = c("#0072B2", "#D55E00", "#661100")) +
+  theme(legend.position = "bottom")
+  
+
+map_TN <- p+
+  geom_point(data = ts_TPtrends_lakes_sp_2, aes(x = lake_lon_decdeg, y = lake_lat_decdeg, color= Trend), shape=18, size=3)+
+  #geom_point(data = ts_TNtrends_lakes_sp_2, aes(x = lake_lon_decdeg, y = lake_lat_decdeg, color= Trend), shape=17, size=3)+
+  # ggtitle("Study sites location and elevation in meters")+
+  labs(x= "longitude", y="latitude", color = "Legend")+
+  ggtitle("TN trends") +
+  scale_color_manual(values = c("#0072B2", "#D55E00", "#661100")) +
+  theme(legend.position = "bottom")
 
 
+map_TP + map_TN
