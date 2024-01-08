@@ -9,16 +9,18 @@ library(sf)
 library(mapview)
 
 source("scripts/LAGOS_EDI.R")
-source("scripts/LAGOS_EDI_characteristics.R")
+#source("scripts/LAGOS_EDI_characteristics.R")
 source("scripts/06_plottingcorrelations_new.R")
+
+dt2 <- read.csv("/Volumes/Seagate Portable Drive/Datasets/Datasets/LAGOS-US/lake_characteristics.csv")
 
 lagos_lakearea <- dt2 %>%
   select(lagoslakeid, lake_totalarea_ha)
 
-lagos_hu12 <- st_read('D:/Datasets/Datasets/LAGOS_GEO/gis_geo_v1.0.gpkg', layer="hu12")
+lagos_hu12 <- st_read('/Volumes/Seagate Portable Drive/Datasets/Datasets/LAGOS_GEO/gis_geo_v1.0.gpkg', layer="hu12")
 # rename(zoneid = hu12_zoneid) Use shape_area to calculate Q!
 
-lagos_geo_connect <- read.csv("D:/Datasets/Datasets/LAGOS_GEO/zone_connectivity.csv")%>%
+lagos_geo_connect <- read.csv("/Volumes/Seagate Portable Drive/Datasets/Datasets/LAGOS_GEO/zone_connectivity.csv")%>%
   rename(hu12_zoneid = zoneid)
 
 lagos_geo_groundw <- filter(lagos_geo_connect, variable_name %in% c("groundwaterrecharge_mmperyr", "baseflowindex_pct","runoff_inperyr") & spatial_division == "hu12")
@@ -118,11 +120,11 @@ ggplot()+
 #From LAGOS-US data: 
 
 #testing
-lagos_watersh <- read.csv("D:/Datasets/Datasets/LAGOS-US/lake_watersheds.csv")%>%
+lagos_watersh <- read.csv("/Volumes/Seagate Portable Drive/Datasets/Datasets/LAGOS-US/lake_watersheds.csv")%>%
   dplyr::select(lagoslakeid, ws_area_ha, nws_area_ha, ws_lat_decdeg,ws_lon_decdeg, nws_lat_decdeg,nws_lon_decdeg)%>%
   mutate(lagoslakeid=as.character(lagoslakeid))
   
-lagos_charact <- read.csv("D:/Datasets/Datasets/LAGOS-US/lake_characteristics.csv")%>%
+lagos_charact <- read.csv("/Volumes/Seagate Portable Drive/Datasets/Datasets/LAGOS-US/lake_characteristics.csv")%>%
   dplyr::select(lagoslakeid,lake_waterarea_ha)%>%
   mutate(lagoslakeid=as.character(lagoslakeid))
 

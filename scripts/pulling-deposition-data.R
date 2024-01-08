@@ -11,7 +11,7 @@ source("scripts/08_nutrient-loads-sensslopes.R")
 
 #lagos_hu12_df <- as.data.frame(lagos_hu12)
 
-lagos_geo_atm <- read.csv("C:/Users/cbarbosa/Documents/zone_atmosphere.csv")
+lagos_geo_atm <- read.csv("/Users/carolinabarbosa/Dropbox/LAGOS_GEO/zone_atmosphere.csv")
 
 atm_depos_N <- lagos_geo_atm %>%
   filter(variable_name == "totaldepnitrogen_kgperha" & spatial_division == "hu12")%>%

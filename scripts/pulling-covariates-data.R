@@ -28,7 +28,7 @@ study_sites_huc12_buff500 <- inner_join(upstream_sites_lagos, d_mm, by="lagoslak
   dplyr::select(zoneid,climate_year, climate_month, climate_tmean_degc, climate_ppt_mm)%>%
   rename(hu12_zoneid = zoneid)
 
-clim_data_sites <- inner_join(study_sites_huc12, clim_data, by="hu12_zoneid")%>%
+clim_data_sites <- inner_join(study_sites_huc12_buff500, clim_data, by="hu12_zoneid")%>%
   filter(climate_year > '2000' & climate_year <'2016')
 
 yearly_clim_data <- clim_data_sites %>%
@@ -38,11 +38,17 @@ yearly_clim_data <- clim_data_sites %>%
                                #sd = sd,# you can comment these out if you want and just calculate mean/median 
                                #max = max,#
                                #min = min,#
-                               median = median), na.rm = T,
+                               #median = median), na.rm = T,
+                               sum = sum), na.rm = T,
                    .names = "{.col}-{.fn}")) #ready to merge with data/final_retention_dataset.csv
 
 yearly_clim_data <- yearly_clim_data %>%
-  rename(water_year = climate_year, tmean = 'climate_tmean_degc-mean', tmedian = 'climate_tmean_degc-median', prec_mean = 'climate_ppt_mm-mean', prec_median = 'climate_ppt_mm-median')
+  rename(water_year = climate_year, tmean = 'climate_tmean_degc-mean',tsum = 'climate_tmean_degc-sum', prec_mean = 'climate_ppt_mm-mean', prec_total = 'climate_ppt_mm-sum')
+
+yearly_clim_data2 <- yearly_clim_data %>%
+  rename(tsum = 'climate_tmean_degc-sum')
+
+#write.csv(yearly_clim_data2, "data/yearly_clim_data2.csv")
 
 rm(clim_data)
 
@@ -53,17 +59,13 @@ rm(clim_data)
                #names_sep = '-')
 
 ##Connectivity metrics from LAGOS-GEO - Check why I deleted many connectivity metrics here.
-connect_data <- read.csv("/Volumes/Seagate Portable Drive/Datasets/Datasets/LAGOS_GEO/zone_connectivity.csv") %>%
-  filter(spatial_division == 'buff500')
+#connect_data <- read.csv("/Volumes/Seagate Portable Drive/Datasets/Datasets/LAGOS_GEO/zone_connectivity.csv") %>%
+ # filter(spatial_division == 'buff500')
 
-connect_data_lagos <- inner_join(study_sites_huc12_buff500, connect_data2, by= "buff500_zoneid")%>% #buff500_zoneid
-  dplyr::select(lagoslakeid, buff500_zoneid, variable_name, value, main_feature )%>%
+#connect_data_lagos <- inner_join(study_sites_huc12_buff500, connect_data, by= "buff500_zoneid")%>% #buff500_zoneid
+#  dplyr::select(lagoslakeid, buff500_zoneid, variable_name, value, main_feature )%>%
  # filter(main_feature == "lakes1ha")%>%
-  mutate(lagoslakeid=as.character(lagoslakeid))
-
-connect_data_lagos_streams <- connect_data_lagos %>%
-  pivot_wider(names_from = variable_name, values_from = value) %>% 
-dplyr::select(-main_feature, -buff500_zoneid)
+ # mutate(lagoslakeid=as.character(lagoslakeid))
 
 connect_data_hu12 <- read.csv("/Volumes/Seagate Portable Drive/Datasets/Datasets/LAGOS_GEO/zone_connectivity.csv") %>%
   filter(spatial_division == 'hu12')%>%
@@ -152,7 +154,7 @@ filter(spatial_division == 'buff500')%>%
 terrain_data_lagos <- inner_join(study_sites_huc12_buff500, terrain_data, by= "buff500_zoneid")
 
 terrain_data_final <- terrain_data_lagos %>%
-  select(lagoslakeid, variable_name, value)%>%
+  dplyr::select(lagoslakeid, variable_name, value)%>%
   group_by(lagoslakeid)%>%
   pivot_wider(names_from = variable_name, values_from = value)
 

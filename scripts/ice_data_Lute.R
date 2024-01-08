@@ -17,7 +17,7 @@ study_sites <- read.csv("data/Nretention_df.csv")%>%
 #Number of days between the start and end of snow cover, averaged across years. 
 #The start of snow cover is defined as the first day of the first period of 5 consecutive days with snow depth greater 
 #than 10 mm, and day of snow cover end is defined as the last day of the last period of 5 consecutive days with snow depth greater than 10 mm.
-snow_duration <- nc_open("D:/Datasets/Datasets/Lute_dataset/snow_duration_CTRL.nc")
+snow_duration <- nc_open("/Volumes/Seagate Portable Drive/Datasets/Datasets/Lute_dataset/snow_duration_CTRL.nc")
 
 {
   sink('data/snow_duration_CTRL.txt')
@@ -64,7 +64,7 @@ rm(snow_dur.array)
 # Annual number of days with snow depth less than 10 mm between the start and end of snow cover, averaged across years. The start of 
 #snow cover is defined as the first day of the first period of 5 consecutive days with snow depth greater than 10 mm, and day of 
 #snow cover end is defined as the last day of the last period of 5 consecutive days with snow depth greater than 10 mm.(snow_free_days_CTRL.nc)
-snow_free_days <- nc_open("D:/Datasets/Datasets/Lute_dataset/snow_free_days_CTRL.nc")
+snow_free_days <- nc_open("/Volumes/Seagate Portable Drive/Datasets/Datasets/Lute_dataset/snow_free_days_CTRL.nc")
 
 {
   sink('data/snow_free_days_CTRL.txt')
@@ -106,7 +106,7 @@ rm(snow_free_days.array)
 
 ###Annual maximum SWE ---------------------
 #Annual maximum snow water equivalent (m), averaged across years (annual_maximum_swe_CTRL.nc)
-max_swe <- nc_open("D:/Datasets/Datasets/Lute_dataset/annual_maximum_swe_CTRL.nc")
+max_swe <- nc_open("/Volumes/Seagate Portable Drive/Datasets/Datasets/Lute_dataset/annual_maximum_swe_CTRL.nc")
 
 {
   sink('data/swe.txt')

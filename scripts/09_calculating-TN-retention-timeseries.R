@@ -42,14 +42,14 @@ Nretention_ts <- merge(Nretention, ts_hydro_us)%>%
 
 by(Nretention_ts,factor(Nretention_ts$categorical_ts),summary)
 
-g1 <- ggplot(Nretention_ts, aes(y=log(TN_removal_gNm2yr), x=categorical_ts)) +
-  geom_boxplot(aes(fill = categorical_ts), outlier.shape = NA, notch = FALSE)  + geom_jitter(height = 0, width = 0.1)+
- # scale_y_continuous(limits = quantile(Nretention_ts$TN_removal_gNm2yr, c(0.1, 0.9)))+
-  #stat_summary(fun.y=mean, colour="black", geom="point",shape=16, size=4,show.legend = FALSE)+
- # stat_summary(fun.y=median, colour="red", geom="point",shape=23, size=6,show.legend = FALSE)+
-  scale_fill_manual(values=c("#009E73", "#56B4E9")) +
-  ggtitle("Nremoval (gNm-2yr-1) based on ts")+
-  theme_bw()
+g1 <- ggplot(Nretention_ts, aes(x = categorical_ts, y = log(TN_removal_gNm2yr))) +
+    geom_violin(aes(fill = categorical_ts), outlier.shape = NA) +
+    #geom_jitter(aes(color = log(TN_removal_gNm2yr)), height = 0, width = 0.1) +
+   scale_fill_manual(values = c("#009E73", "#56B4E9")) +
+    scale_color_gradient(low = "#FEFE62", high = "#D35FB7") +  # Color by log10 Pretention values
+  #ggtitle("Distribution of the TN retention values based on TS") +
+  theme_bw()+
+  theme(legend.position = "none")
 
 
 #ggsave("figures/TN_retention_lakes-trophic-state.png", width=8, height=6,units="in", dpi=300)
@@ -76,18 +76,26 @@ write.csv(upstream_Pconc_hydro_lt, "data/Pretention_df.csv") #24 sites
 
 by(Pretention_ts,factor(Pretention_ts$categorical_ts),summary)
 
-g2 <- ggplot(Pretention_ts, aes(y=Pret_coef, x=categorical_ts)) +
-  geom_boxplot(aes(fill = categorical_ts), outlier.shape = NA)  + geom_jitter(height = 0, width = 0.1)+
-  scale_y_continuous(limits = quantile(Pretention_ts$Pret_coef, c(0.1, 0.9)))+
-  scale_fill_manual(values=c("#009E73", "#56B4E9")) +
-  ggtitle("Pretention coeficient based on ts")+
-  theme_bw()
+g2 <- ggplot(Pretention_ts, aes(x = categorical_ts, y = log(Pret_coef))) +
+  geom_violin(aes(fill = categorical_ts), outlier.shape = NA) +
+  #geom_jitter(aes(color = log(Pret_coef)), height = 0, width = 0.1) +
+  scale_fill_manual(values = c("#009E73", "#56B4E9")) +
+  scale_color_gradient(low = "#FEFE62", high = "#D35FB7") +  # Color by log10 Pretention values
+  #ggtitle("Distribution of the TP retention values based on TS") +
+  theme_bw()+
+  theme(legend.position = "none")
 
-oligo <- Pretention_ts %>%
-  filter(categorical_ts =="oligo") #n = 212
+oligo_lakes <- Pretention_ts %>%
+  group_by(lagoslakeid)%>%
+filter(categorical_ts =="oligo")%>%
+  add_count() %>%
+  filter(n>=10) #11
 
-eut <- Pretention_ts %>%
-  filter(categorical_ts =="eu/mixo") #n = 96 
+eu_lakes <- Pretention_ts %>%
+  group_by(lagoslakeid)%>%
+  filter(categorical_ts =="eu/mixo")%>%
+  add_count() %>%
+  filter(n>=10) #1
 
 g1 + g2
 ggsave("figures/N-P-retention-TS.png", width=8, height=6,units="in", dpi=300)

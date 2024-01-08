@@ -3,6 +3,8 @@ library(lme4)
 library(devtools)
 library(arm)
 library(tidyverse)
+library(car)
+library(lsmeans)
 
 #PS: including a large number of predictors in a model can lead to challenges related to model interpretability, computational performance, 
 #and potential issues with multicollinearity. It is important to carefully consider the relevance and significance of each predictor and 
@@ -99,7 +101,7 @@ str(N_retention)
 
 # Construct the formula 
 model <- lmer(TN_removal_gNm2yr_log ~ fluxTP_kgy + nlcd_barren31_pct + total_precip_mm + total_km2 + 
-                nlcd_past81_pct + topographicwetness + ann_max_swe + nws_drain_ratio + nlcd_forcon42_pct +
+                nlcd_past81_pct + topographicwetness - ann_max_swe + nws_drain_ratio - nlcd_forcon42_pct +
                 (1|lagoslakeid) + (1|water_year), data=N_retention)
 display(model) #coef.est: estimated effect and coef.se: standard errors associated with the estimated coefficients. 
 #AIC: The Akaike Information Criterion (AIC) is a measure of model fit that balances goodness of fit and model complexity. 
@@ -112,3 +114,26 @@ summary(model)
 
 # View the summary statistics of fixed effects
 summary(model)$coefficients
+
+###Ben's example
+qqnorm(resid(model)) # model residuals are normally distributed
+plot(resid(model) ~ fitted(model)) # a little bit of a funnel, but mostly okay. These two things suggest that the model residuals are fine, and you're significance testing should be okay
+
+# let's first just look at the basic model output, ignore the fixed effects significance tests for now since they are calculated in a different way
+summary(model)
+
+# the only things you really want to pay attention to from this (for now) are the random effects residual variance components and the observation numbers
+# the random effects residual variance components tell you how much of the remaining variation is explained by each random effect, after accounting for your fixed effects. So for instance, CruiseNo has an estimated residual variance of 0.268026 and if you add up all of the residual variance components, you get ~ 0.396067, meaning that of all of the variation not explained by your fixed effects, 67.67% is explained just by the differences among the cruises. That's a lot. However, you'd imagine there was a lot of variation among the cruises in things like cloudiness, rain, etc. that will probably all affect all of the stations during a cruise. So intuitively, it makes sense that a lot of the variation not explained by the fixed effects is explained by just the variation among cruises. 
+# the other thing you want to pay attention to are the number of observations listed. You should see the total number of observations as well as the number of groups (e.g. 25 years, 14 station codes). Together these things will determine your denominator degrees of freedom
+
+# okay now let's do some hypothesis testing using the Kenward-Roger demoninator degrees of freedom approximation. This is the most conservative F-test for mixed-effects models and it's the one I prefer when possible. 
+anova(model, ddf = 'Kenward-Roger') 
+# significant Site Type and carps * site type effects.  
+# notice the "DenDF" column is different than a typical anova table. Denominator degrees of freedom are weird for mixed effects models and the Kenward-Rogers degrees of freedom are one way of estimating them. For your interactive effects here, I would have guessed that they should have been close to, but less than, the number of station:year combinations, which was 347. From this analysis, the degrees of freedom are ~ 301 which seems about right. 
+
+# now post-hoc testing is a little trickier. You've got some options. You can spend time looking for how to do a TukeyHSD test, perhaps in the package multcomp, though I'm not sure. 
+# you could plot your data as the fitted means +/- bootstrapped 95% confidence intervals, and if they don't overlap, that's an extremely conservative post-hoc test. This isn't the easiest thing in the world to do, but can be done
+# what I would advocate I guess is running the analysis separately for each site type and looking to see if some of the site types are significantly different pre-post carp invasion versus not. That was a finding from your thesis as I recall. My understanding is that this is called a simple main effects test. An example of how to do one of these is:
+
+lsmeans(model, pairwise ~ fluxTP_kgy|nlcd_past81_pct, adjust = 'none')
+
