@@ -9,6 +9,9 @@ library(purrr)
 library(ggpubr)
 library(sf)
 library(mapview)
+library("rnaturalearth")
+library("rnaturalearthdata")
+library(ggspatial)
 
 # source("scripts/07_organizing-nutrient-loads-df.R")
 source("scripts/07_organizing-nutrient-loads-df_newQ.R")
@@ -38,8 +41,8 @@ TN_loads_ts <- nutrient_loads_lagos_TN %>%
 all_loads_ts <- bind_rows(TP_loads_ts, TN_loads_ts) %>%
   group_by(station_id, lagoslakeid, nutrient) %>%
   add_count() %>%
-  filter(n>=10) #exclude sites with less than 10 years of data
-
+  filter(n>=10)%>% #exclude sites with less than 10 years of data
+  filter(lagoslakeid!= 457120) 
 
 ##########################################################################################
 ##Functions for calculating sens slopes and intercepts for plotting later
@@ -277,28 +280,53 @@ ts_TNtrends_lakes_sp_2 <- right_join(d_mm, ts_TNtrends_lakes, by="lagoslakeid")%
 map_TP <- mapview(ts_TPtrends_lakes_sp_2, zcol = "Trend")
 map_TN <- mapview(ts_TNtrends_lakes_sp_2, zcol = "Trend")
 
+mapview(ts_TNtrends_lakes_sp_2, zcol = "Trend", col.regions = c("grey", "navy", "red"), map.types = "OpenTopoMap") 
+  mapview(ts_TPtrends_lakes_sp_2, zcol = "Trend")
 
-p <- ggmap(get_stamenmap(bbox=c(-125, 25, -100, 50), zoom = 5, 
-                         maptype='terrain-background'))
+p <- st_bbox(c(xmin = -125, xmax = 25, ymin = -100, ymax = 50), 
+             crs = st_crs(ts_TNtrends_lakes_sp_2)) |> 
+  st_as_sfc()
 
-map_TP <- p+
+##new map
+world <- ne_countries(scale = "medium", returnclass = "sf")
+class(world)
+US <- ggplot(data = world) +
+  geom_sf(color = "black", fill = "white") +
+  annotation_scale(location = "bl", width_hint = 0.2) +
+  annotation_north_arrow(location = "bl", which_north = "true", 
+                         pad_x = unit(0.5, "in"), pad_y = unit(0.2, "in"),
+                         style = north_arrow_fancy_orienteering) +
+  coord_sf(xlim = c(-125, -68), ylim = c(15, 50))
+
+map_TN <- US +
   #geom_point(data = ts_TPtrends_lakes_sp_2, aes(x = lake_lon_decdeg, y = lake_lat_decdeg, color= Trend), shape=18, size=3)+
-  geom_point(data = ts_TNtrends_lakes_sp_2, aes(x = lake_lon_decdeg, y = lake_lat_decdeg, color= Trend), shape=18, size=3)+
-  # ggtitle("Study sites location and elevation in meters")+
-  labs(x= "longitude", y="latitude", color = "Legend")+
-  ggtitle("TP trends") +
-  scale_color_manual(values = c("#0072B2", "#D55E00", "#661100")) +
-  theme(legend.position = "bottom")
-  
-
-map_TN <- p+
-  geom_point(data = ts_TPtrends_lakes_sp_2, aes(x = lake_lon_decdeg, y = lake_lat_decdeg, color= Trend), shape=18, size=3)+
-  #geom_point(data = ts_TNtrends_lakes_sp_2, aes(x = lake_lon_decdeg, y = lake_lat_decdeg, color= Trend), shape=17, size=3)+
+  geom_sf(data = ts_TNtrends_lakes_sp_2, aes(color= Trend, shape = Trend), size=3)+
+  coord_sf(xlim = c(-125, -68), ylim = c(15, 50))+
   # ggtitle("Study sites location and elevation in meters")+
   labs(x= "longitude", y="latitude", color = "Legend")+
   ggtitle("TN trends") +
   scale_color_manual(values = c("#0072B2", "#D55E00", "#661100")) +
+  scale_shape_manual(values=c(4,1,12))+
+  theme(legend.position = "bottom")
+  
+
+map_TP <- US +
+  #geom_point(data = ts_TPtrends_lakes_sp_2, aes(x = lake_lon_decdeg, y = lake_lat_decdeg, color= Trend), shape=18, size=3)+
+  geom_sf(data = ts_TPtrends_lakes_sp_2, aes(color= Trend, shape = Trend), size=3)+
+  coord_sf(xlim = c(-125, -68), ylim = c(15, 50))+
+  # ggtitle("Study sites location and elevation in meters")+
+  labs(x= "longitude", y="latitude", color = "Legend")+
+  ggtitle("TP trends") +
+  scale_color_manual(values = c("#0072B2", "#D55E00", "#661100")) +
+  scale_shape_manual(values=c(4,1,12))+
   theme(legend.position = "bottom")
 
-
-map_TP + map_TN
+library(ggpubr)
+multi_map <- ggarrange(map_TN, map_TP, 
+                      # labels = c("A", "B"),
+                       ncol=2, nrow = 1,
+                       common.legend = TRUE)
+multi_plot <- annotate_figure(multi_map,
+                              top = text_grob("Spatial distribution of TN and TP loads trends", color = "black", face = "bold", size = 11))
+multi_plot
+ggsave("map_fig2.png", width=8, height=6,units="in", dpi=300)

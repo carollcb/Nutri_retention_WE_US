@@ -45,7 +45,8 @@ by(Nretention_ts,factor(Nretention_ts$categorical_ts),summary)
 g1 <- ggplot(Nretention_ts, aes(x = categorical_ts, y = log(TN_removal_gNm2yr))) +
     geom_violin(aes(fill = categorical_ts), outlier.shape = NA) +
     #geom_jitter(aes(color = log(TN_removal_gNm2yr)), height = 0, width = 0.1) +
-   scale_fill_manual(values = c("#009E73", "#56B4E9")) +
+  stat_summary(fun.y = median, geom = "point", shape = 20, size = 3, color = "black", position = position_dodge(0.75)) +  # Add median points
+  scale_fill_manual(values = c("#009E73", "#56B4E9")) +
     scale_color_gradient(low = "#FEFE62", high = "#D35FB7") +  # Color by log10 Pretention values
   #ggtitle("Distribution of the TN retention values based on TS") +
   theme_bw()+
@@ -79,6 +80,7 @@ by(Pretention_ts,factor(Pretention_ts$categorical_ts),summary)
 g2 <- ggplot(Pretention_ts, aes(x = categorical_ts, y = log(Pret_coef))) +
   geom_violin(aes(fill = categorical_ts), outlier.shape = NA) +
   #geom_jitter(aes(color = log(Pret_coef)), height = 0, width = 0.1) +
+  stat_summary(fun.y = median, geom = "point", shape = 20, size = 3, color = "black", position = position_dodge(0.75)) +  # Add median points
   scale_fill_manual(values = c("#009E73", "#56B4E9")) +
   scale_color_gradient(low = "#FEFE62", high = "#D35FB7") +  # Color by log10 Pretention values
   #ggtitle("Distribution of the TP retention values based on TS") +

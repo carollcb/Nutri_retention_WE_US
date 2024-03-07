@@ -14,6 +14,9 @@ mutate(lagoslakeid = as.character(lagoslakeid))%>%
   mutate(TS = ifelse(categorical_ts == "oligo", 1, ifelse(categorical_ts == "eu/mixo", 2, NA)))%>%
   select(-mean_prob_oligo, -mean_prob_eumixo, -mean_prob_dys, -lake_elevation_m, -tmean, -prec_mean)
 
+data_all_TN <- data_all_TN %>%
+  group_by(lagoslakeid)%>%
+  mutate(mean_area = mean(total_km2))
 
 input_seasonality <- read.csv("data/is.csv")%>%
   mutate(lagoslakeid = as.character(lagoslakeid))%>%
@@ -48,7 +51,9 @@ yearly_clim_data2 <- yearly_clim_data %>%
   select(-X)
 
 N_retention_final <- inner_join(N_retention, yearly_clim_data2, by=c('lagoslakeid', 'water_year')) %>%
-  select(-tsum, -prec_mean, -water_year, -lake_centroidstate, -fluxTP_kgy)
+  select(-total_km2, -tsum, -prec_mean, -water_year, -lake_centroidstate, -fluxTP_kgy)%>%
+  filter(lagoslakeid!= 457120) 
+
 #258 obs of 151 variables -> 258 obs of 140 varia -> 229 obs of 140 variab
 # Set the seed for reproducibility
 set.seed(123)
@@ -86,6 +91,10 @@ data_all_TP <- read.csv("data/data_all_TP_new.csv")%>%
   mutate(TS = ifelse(categorical_ts == "oligo", 1, ifelse(categorical_ts == "eu/mixo", 2, NA)))%>%
   select(-mean_prob_oligo, -mean_prob_eumixo, -mean_prob_dys, -lake_elevation_m, -tmean, -prec_mean)
 
+data_all_TP <- data_all_TP %>%
+  group_by(lagoslakeid)%>%
+  mutate(mean_area = mean(total_km2))
+
 data_all_TP_2 <- inner_join(data_all_TP, input_seasonality, by="lagoslakeid")
 P_retention<-data_all_TP_2 %>%
   mutate(Pret_coef_log = log(Pret_coef))%>%
@@ -108,7 +117,9 @@ P_retention<-data_all_TP_2 %>%
   dplyr::select(-X, -seasonal_km2, -res_time_yr,-mean_annual_temp_k, -tmedian, -prec_median, -lake_centroidstate, -total_Pin_ugl, -Pret_coef, -permanent_km2,-fluxTP_kgy, -total_precip_mm,-categorical_ts)
 
 P_retention_final <- inner_join(P_retention, yearly_clim_data2, by=c('lagoslakeid', 'water_year')) %>%
-  select(-tsum, -prec_mean, -water_year, -lake_centroidstate, -totTNload_gm2yr)                
+  select(-total_km2, -tsum, -prec_mean, -water_year, -lake_centroidstate, -totTNload_gm2yr)       %>%
+  filter(lagoslakeid!= 457120) 
+  
 #229 obs of 146 variables -> 229 obs of 135 variab
 # Set the seed for reproducibility
 set.seed(123)

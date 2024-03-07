@@ -63,27 +63,27 @@ both_trend <- data |>
   filter(lagoslakeid %in% c('454184', '461718', '467587', '460768')) |>
   mutate(lagoslakeid = factor(lagoslakeid, levels=c('454184', '461718', '467587', '460768')))
 
-ggplot(both_trend |> mutate(flux = ifelse(nutrient == 'TP', flux*10, flux),
+both <- ggplot(both_trend |> mutate(flux = ifelse(nutrient == 'TP', flux*10, flux),
                       intercept = ifelse(nutrient == 'TP', intercept*10, intercept),
                       slope = ifelse(nutrient == 'TP', slope*10, slope))) +
   geom_point(aes(y = flux, x=water_year, color = nutrient))+
   facet_wrap(~lagoslakeid, scales = 'free') +
   geom_abline(aes(intercept = intercept, slope = slope, group=nutrient,
                   color=nutrient)) + #MK estimate trend
-  labs(y= "Annual nutrient loads "~(kg~yr^-1), x="") +
+  labs(y= '', x="", title='Load trends for both TN and TP') +
   scale_y_continuous(
     # first axis
-    name = "Annual TN load "~(kg~yr^-1),
+    #name = "Annual TN load "~(kg~yr^-1),
     
     # second axis 
-    sec.axis = sec_axis(~./10, name = "Annual TP load "~(kg~yr^-1))
+    sec.axis = sec_axis(~./10)
   )  +
   theme_bw() +
-  scale_color_manual(values=c("darkblue","gold2")) +
+  scale_color_manual(values=c("darkblue","#994F00")) +
   theme(
-        axis.title.y.right = element_text(color = "gold2"),
+        axis.title.y.right = element_text(color = "#994F00"),
         axis.title.y = element_text(color = "darkblue", vjust = -2),
-        axis.line.y.right = element_line(color = "gold2"),
+        axis.line.y.right = element_line(color = "#994F00"),
         axis.line.y.left = element_line(color = "darkblue"),
         legend.title = element_blank(), 
         legend.position = 'none')
@@ -96,7 +96,7 @@ ggsave('figures/Fig3_both_N_P_trending.png', height=6, width=8, units='in', dpi=
 single_trend <- data |>
   filter(!lagoslakeid %in% c('454184', '461718', '467587', '460768', '454129')) |> # removed 454129 Lake Havasu
   mutate(trend_sig = ifelse(lagoslakeid %in% c('328600', '361058', '479277'),'No trend TP', 
-                            ifelse(lagoslakeid %in% c('457120', '360319'), 'No trend TN, TP decreased', 'No trend TN, TP increased'))) 
+                            ifelse(lagoslakeid %in% c('457120', '360319','454129'), 'No trend TN, TP decreased', 'No trend TN, TP increased'))) 
 
 
 # no trend TP
@@ -108,7 +108,7 @@ a<- ggplot(single_trend |> filter(trend_sig == 'No trend TP') |> mutate(flux = i
   facet_wrap(~lagoslakeid, scales = 'free') +
   geom_abline(aes(intercept = intercept, slope = slope, group=nutrient,
                   color=nutrient)) + #MK estimate trend
-  labs(y= '', x="", title='No trend TP') +
+  labs(y= 'Annual nutrient load '~(kg~yr^-1), x="", title='No trend TP') +
   # scale_y_continuous(
   #   # first axis
   #   name = "Annual TN load "~(kg~yr^-1),
@@ -117,7 +117,7 @@ a<- ggplot(single_trend |> filter(trend_sig == 'No trend TP') |> mutate(flux = i
   #   sec.axis = sec_axis(~./10, name = "Annual TP load "~(kg~yr^-1))
   # )  +
   theme_bw() +
-  scale_color_manual(values=c("darkblue","gold2")) +
+  scale_color_manual(values=c("darkblue","#994F00")) +
   theme(
     #axis.title.y.right = element_text(color = "gold2"),
     #axis.title.y = element_text(color = "darkblue", vjust = -2),
@@ -139,7 +139,7 @@ b <- ggplot(single_trend |> filter(trend_sig == 'No trend TN, TP decreased') |>
   facet_wrap(~lagoslakeid, scales = 'free') +
   geom_abline(aes(intercept = intercept, slope = slope, group=nutrient,
                   color=nutrient)) + #MK estimate trend
-  labs(y= 'Annual nutrient load '~(kg~yr^-1), x="", title='No trend TN, TP decreased') +
+  labs(y= '', x="", title='No trend TN, TP decreased') +
   # scale_y_continuous(
   #   # first axis
   #   name = "Annual TN load "~(kg~yr^-1),
@@ -148,7 +148,7 @@ b <- ggplot(single_trend |> filter(trend_sig == 'No trend TN, TP decreased') |>
   #   sec.axis = sec_axis(~./10, name = "Annual TP load*10 "~(kg~yr^-1))
   # )  +
   theme_bw() +
-  scale_color_manual(values=c("darkblue","gold2")) +
+  scale_color_manual(values=c("darkblue","#994F00")) +
   theme(
     # axis.title.y.right = element_text(color = "gold2"),
     # axis.title.y = element_text(color = "darkblue", vjust = -2),
@@ -179,7 +179,7 @@ c <- ggplot(single_trend |> filter(trend_sig == 'No trend TN, TP increased') |> 
  #   sec.axis = sec_axis(~./10, name = "Annual TP load "~(kg~yr^-1))
  # )  +
   theme_bw() +
-  scale_color_manual(values=c("darkblue","gold2")) +
+  scale_color_manual(values=c("darkblue","#994F00")) +
   theme(
     # axis.title.y.right = element_text(color = "gold2"),
     # axis.title.y = element_text(color = "darkblue", vjust = -2),
@@ -191,9 +191,14 @@ c <- ggplot(single_trend |> filter(trend_sig == 'No trend TN, TP increased') |> 
 
 c
 
-a/b/c
+library(cowplot)
+library(ggpubr)
+ggarrange(a,c,b, nrow = 2, ncol = 2, labels = c("A", "B", "C"))
 ggsave('figures/Fig4_single_trend.png', height=6.5, width=8.5, units='in', dpi=1200)
 
+
+ggarrange(a,c,b,both, nrow = 2, ncol = 2, labels = c("A", "B", "C", "D"), common.legend = T)
+ggsave('figures/Fig4_single.png', height=6.5, width=8.5, units='in', dpi=1200)
 
 # ggplot(data |> mutate(flux = ifelse(nutrient == 'TP', flux*10, flux),
 #                       intercept = ifelse(nutrient == 'TP', intercept*10, intercept),
