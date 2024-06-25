@@ -39,6 +39,17 @@ plot_multi_way_importance(importance_frame, x_measure = "mse_increase", y_measur
 
 plot_TP <- plot_multi_way_importance(importance_frame2, x_measure = "mean_min_depth", y_measure = "no_of_nodes", size_measure = "p_value", main = "Multi-way importance plot for TP retention")
 
+ggsave("figures/plot_metrics_TP.png", plot = plot_TP, width = 10, height = 7, dpi = 300)
+
+library(ggpubr)
+multi_plot <- ggarrange(plot_TN, plot_TP, 
+                       # labels = c("A", "B"),
+                       ncol=2, nrow = 1,
+                       common.legend = FALSE)
+multi_plot
+ggsave("figures/plot_metrics_TN_TP.png", width = 8, height = 6, dpi = 300)
+
+
 # plot_importance_ggpairs(forest) # gives the same result as below but takes longer
 plot_importance_ggpairs(importance_frame)
 

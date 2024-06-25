@@ -9,6 +9,7 @@ library(pdp)
 ####RF for N retention ------------------------------------------------------------------------
 data_all_TN <- read.csv("data/data_all_TN_new.csv")%>%
 mutate(lagoslakeid = as.character(lagoslakeid))%>%
+  group_by(lagoslakeid) %>%
   mutate(nlcd_developed = sum(nlcd_devhi24_pct, nlcd_devlow22_pct, nlcd_devmed23_pct))%>%
   select(-nlcd_devhi24_pct, -nlcd_devlow22_pct, -nlcd_devmed23_pct) %>%
   mutate(TS = ifelse(categorical_ts == "oligo", 1, ifelse(categorical_ts == "eu/mixo", 2, NA)))%>%
@@ -52,25 +53,65 @@ yearly_clim_data2 <- yearly_clim_data %>%
 
 N_retention_final <- inner_join(N_retention, yearly_clim_data2, by=c('lagoslakeid', 'water_year')) %>%
   select(-total_km2, -tsum, -prec_mean, -water_year, -lake_centroidstate, -fluxTP_kgy)%>%
-  filter(lagoslakeid!= 457120) 
+  filter(lagoslakeid!= 457120)%>%
+  filter(lagoslakeid!= 361261)#%>%
+ # mutate(TN_removal_gNm2yr_log=as.factor(TN_removal_gNm2yr_log))
 
+##Adding lake depth
+lake_depth <- read.csv("/Users/carolinabarbosa/Documents/DEPTH_v0.1/lake_depth.csv")%>%
+  mutate(lagoslakeid = as.character(lagoslakeid))%>%
+  select(lagoslakeid, lake_maxdepth_m,
+         lake_meandepth_m,
+         lake_waterarea_ha) #%>% #lake maximum depth in meters, lake mean depth in meters, surface area of lake waterbody polygon from NHD (excluding islands) by way of the LAGOS-US LOCUS v1.0 module
+#drop_na()
+  
+N_retention_final_2 <- left_join(N_retention_final, lake_depth, by="lagoslakeid")
+
+wt_sites <- read_csv("data/wt_sites.csv")%>%
+  select(lagoslakeid, Tyear_mean)%>%
+  mutate(lagoslakeid = as.character(lagoslakeid))
+
+N_retention_final_3 <- left_join(N_retention_final_2, wt_sites, by="lagoslakeid")
+
+# Function to replace NAs with appropriate values based on column type
+replace_na_by_type <- function(data) {
+  for (col in colnames(data)) {
+    if (is.numeric(data[[col]])) {
+      data[[col]][is.na(data[[col]])] <- 0  # Replace NAs in numeric columns with 0
+    } else if (is.character(data[[col]])) {
+      data[[col]][is.na(data[[col]])] <- "Unknown"  # Replace NAs in character columns with "Unknown"
+    }
+  }
+  return(data)
+}
+
+# Apply the function to specific rows
+# Replace NAs in rows 3 and 5 with empty string
+N_retention_final_3[,c(50, 51,52)] <- replace_na_by_type(N_retention_final_3[,c(50, 51, 52)])
+
+# Print the modified dataframe
+print("Modified DataFrame:")
+print(N_retention_final_3)
+
+ 
 #258 obs of 151 variables -> 258 obs of 140 varia -> 229 obs of 140 variab
 # Set the seed for reproducibility
 set.seed(123)
 
 # Build the random forest model
 #rf_model <- randomForest(predictors, target, ntree = 500, importance = TRUE)
-rf_model_N2 <- randomForest(TN_removal_gNm2yr_log ~ ., data = N_retention_final, importance = TRUE)
+#mtry=p/3 (https://bradleyboehmke.github.io/HOML/random-forest.html)
+rf_model_N2 <- randomForest(TN_removal_gNm2yr_log ~ ., data = N_retention_final_3, mtry = 17 , ntree =500, importance = TRUE)
 
 # Get the variable importance
-var_importance <- importance(rf_model_N2)
+var_importance <- randomForest::importance(rf_model_N2)
 
-v1 <- vip(rf_model_N, num_features = 10, aesthetics = list(color = "grey35", fill = "#E1BE6A", size = 0.8)) + ggtitle("Variable importance for TN retention")
+v1 <- vip(rf_model_N2, num_features = 50, aesthetics = list(color = "grey35", fill = "#E1BE6A", size = 0.8)) + ggtitle("Variable importance for TN retention")
 
-impToPlot <- importance(rf_model_N, scale=FALSE)
+impToPlot <- randomForest::importance(rf_model_N2, scale=FALSE)
 dotchart(sort(impToPlot[,1]), xlab="IncNodePurity")
 
-b1 <- varImpPlot(rf_model_N, n.var = 7, type = 2, main ="Variable Importance for TN retention")
+b1 <- varImpPlot(rf_model_N2, n.var = 7, type = 2, main ="Variable Importance for TN retention")
 
 N_ret_pred <- N_retention %>%
   select(lagoslakeid, water_year, TN_removal_gNm2yr_log, fluxTP_kgy, nlcd_barren31_pct, total_precip_mm, nlcd_past81_pct, ann_max_swe, nws_drain_ratio, total_km2)%>%
@@ -87,6 +128,7 @@ N_ret_pred_new <- N_retention %>%
 ####RF for P retention ------------------------------------------------------------------------
 data_all_TP <- read.csv("data/data_all_TP_new.csv")%>%
   mutate(lagoslakeid = as.character(lagoslakeid))%>%
+  group_by(lagoslakeid)%>%
   mutate(nlcd_developed = sum(nlcd_devhi24_pct, nlcd_devlow22_pct, nlcd_devmed23_pct))%>%
   mutate(TS = ifelse(categorical_ts == "oligo", 1, ifelse(categorical_ts == "eu/mixo", 2, NA)))%>%
   select(-mean_prob_oligo, -mean_prob_eumixo, -mean_prob_dys, -lake_elevation_m, -tmean, -prec_mean)
@@ -118,7 +160,21 @@ P_retention<-data_all_TP_2 %>%
 
 P_retention_final <- inner_join(P_retention, yearly_clim_data2, by=c('lagoslakeid', 'water_year')) %>%
   select(-total_km2, -tsum, -prec_mean, -water_year, -lake_centroidstate, -totTNload_gm2yr)       %>%
-  filter(lagoslakeid!= 457120) 
+  filter(lagoslakeid!= 457120) %>%
+  filter(lagoslakeid!= 361261)
+  #mutate(Pret_coef_log=as.factor(Pret_coef_log))
+
+P_retention_final_2 <- left_join(P_retention_final, lake_depth, by="lagoslakeid")
+
+P_retention_final_3 <- left_join(P_retention_final_2, wt_sites, by="lagoslakeid")
+
+# Apply the function to specific rows
+# Replace NAs in rows 3 and 5 with empty string
+P_retention_final_3[,c(53, 54,55)] <- replace_na_by_type(P_retention_final_3[,c(53, 54, 55)])
+
+# Print the modified dataframe
+print("Modified DataFrame:")
+print(P_retention_final_3)
   
 #229 obs of 146 variables -> 229 obs of 135 variab
 # Set the seed for reproducibility
@@ -126,7 +182,7 @@ set.seed(123)
 
 # Build the random forest model
 #rf_model_TP <- randomForest(predictors, target, ntree = 500, importance = TRUE)
-rf_model_TP_2 <- randomForest(Pret_coef_log ~ ., data = P_retention_final, importance = TRUE)
+rf_model_TP_2 <- randomForest(Pret_coef_log ~ ., data = P_retention_final_3,mtry = 18 , ntree =500, importance = TRUE)
 
 b2 <- varImpPlot(rf_model_TP_2, n.var = 7, type = 2, main ="Variable Importance for TP retention")
 
@@ -143,9 +199,12 @@ P_ret_pred_new <- P_retention %>%
   rename(SWE = ann_max_swe, ups_fluxTN= totTNload_gm2yr, shrub_land = nlcd_shrub52_pct, evergforest_land = nlcd_forcon42_pct, drain_ratio = nws_drain_ratio, prec_mean = prec_mean, snow_dur = snowdur) 
 
 # Get the variable importance
-var_importance <- importance(rf_model_TP_2)
+var_importance <- randomForest::importance(rf_model_TP_2)
 
 varImpPlot(rf_model_TP_2)
+
+v2 <- vip(rf_model_TP_2, num_features = 50, aesthetics = list(color = "grey35", fill = "#E1BE6A", size = 0.8)) + ggtitle("Variable importance for TP retention")
+
 
 grid.arrange()
 
@@ -207,7 +266,7 @@ plot(pp6, type="l", ylab="log(TP retention)", xlab="Catchment/lake ratio")
 plot(pp7, type="l", ylab="log(TP retention)", xlab="Shrub and scrub areas (%)")
 
 #pdp package
-pdp::partial(rf_model_N, pred.var = c("total_precip_mm","nlcd_past81_pct"), grid.resolution = 40, 
+pdp::partial(rf_model_N2, pred.var = c("total_precip_mm","nlcd_past81_pct"), grid.resolution = 40, 
              plot=TRUE, chull = TRUE, progress = TRUE)
 
 pdp::partial(rf_model_N, pred.var = "total_precip_mm",
@@ -218,7 +277,7 @@ rf_model_N %>%
   plotPartial(smooth = TRUE, lwd = 2, ylab = expression(f(fluxTP_kgy)))
 
 # Compute partial dependence data for fluxTP_kgy, nlcd_barren31_pct, total_precip_mm, ann_max_swe
-pd <- pdp::partial(rf_model_N, pred.var = c("fluxTP_kgy", "nlcd_past81_pct"))
+pd <- pdp::partial(rf_model_N2, pred.var = c("prec_total", "nlcd_past81_pct"))
 # Default PDP
 pdp1 <- plotPartial(pd)
 # Add contour lines and use a different color palette

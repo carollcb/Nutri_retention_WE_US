@@ -8,7 +8,7 @@ source("scripts/11_runningRF.R")
 rf_model_N
 
 #To obtain the distribution of minimal depth we pass our forest to the function min_depth_distribution
-min_depth_frame <- min_depth_distribution(rf_model_N)
+min_depth_frame <- min_depth_distribution(rf_model_N2)
 head(min_depth_frame, n = 10)
 
 # plot_min_depth_distribution(forest) # gives the same result as below but takes longer

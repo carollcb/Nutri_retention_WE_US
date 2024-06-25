@@ -1,8 +1,8 @@
 # Need to run code in 08_nutrient-loads-sensslopes.R first to get all_loads_ts
 
+withnames <- inner_join(all_loads_ts, upstream_sites_lagos, by="lagoslakeid")
 
-
-data = all_loads_ts %>%
+data = withnames %>%
  # filter(lagoslakeid %in% trending_sites$lagoslakeid) |>
   left_join(trending_sites) |>
   mutate(Trend = as.character(Trend))
@@ -67,7 +67,7 @@ both <- ggplot(both_trend |> mutate(flux = ifelse(nutrient == 'TP', flux*10, flu
                       intercept = ifelse(nutrient == 'TP', intercept*10, intercept),
                       slope = ifelse(nutrient == 'TP', slope*10, slope))) +
   geom_point(aes(y = flux, x=water_year, color = nutrient))+
-  facet_wrap(~lagoslakeid, scales = 'free') +
+  facet_wrap(~lake_namelagos, scales = 'free') +
   geom_abline(aes(intercept = intercept, slope = slope, group=nutrient,
                   color=nutrient)) + #MK estimate trend
   labs(y= '', x="", title='Load trends for both TN and TP') +
@@ -105,7 +105,7 @@ a<- ggplot(single_trend |> filter(trend_sig == 'No trend TP') |> mutate(flux = i
                             slope = ifelse(nutrient == 'TP', slope*10, slope)) |>
              mutate(nutrient = ifelse(nutrient == 'TP', 'TP*10', 'TN'))) +
   geom_point(aes(y = flux, x=water_year, color = nutrient))+
-  facet_wrap(~lagoslakeid, scales = 'free') +
+  facet_wrap(~lake_namelagos, scales = 'free') +
   geom_abline(aes(intercept = intercept, slope = slope, group=nutrient,
                   color=nutrient)) + #MK estimate trend
   labs(y= 'Annual nutrient load '~(kg~yr^-1), x="", title='No trend TP') +
@@ -136,7 +136,7 @@ b <- ggplot(single_trend |> filter(trend_sig == 'No trend TN, TP decreased') |>
                      slope = ifelse(nutrient == 'TP', slope*10, slope)) |>
               mutate(nutrient = ifelse(nutrient == 'TP', 'TP*10', 'TN'))) +
   geom_point(aes(y = flux, x=water_year, color = nutrient))+
-  facet_wrap(~lagoslakeid, scales = 'free') +
+  facet_wrap(~lake_namelagos, scales = 'free') +
   geom_abline(aes(intercept = intercept, slope = slope, group=nutrient,
                   color=nutrient)) + #MK estimate trend
   labs(y= '', x="", title='No trend TN, TP decreased') +
@@ -167,7 +167,7 @@ c <- ggplot(single_trend |> filter(trend_sig == 'No trend TN, TP increased') |> 
                                                                                   slope = ifelse(nutrient == 'TP', slope*10, slope)) |>
               mutate(nutrient = ifelse(nutrient == 'TP', 'TP*10', 'TN'))) +
   geom_point(aes(y = flux, x=water_year, color = nutrient))+
-  facet_wrap(~lagoslakeid, scales = 'free') +
+  facet_wrap(~lake_namelagos, scales = 'free') +
   geom_abline(aes(intercept = intercept, slope = slope, group=nutrient,
                   color=nutrient)) + #MK estimate trend
   labs(y= '', x="", title='No trend TN, TP increased') +
@@ -198,7 +198,7 @@ ggsave('figures/Fig4_single_trend.png', height=6.5, width=8.5, units='in', dpi=1
 
 
 ggarrange(a,c,b,both, nrow = 2, ncol = 2, labels = c("A", "B", "C", "D"), common.legend = T)
-ggsave('figures/Fig4_single.png', height=6.5, width=8.5, units='in', dpi=1200)
+ggsave('figures/Fig4_single.png', height=8.5, width=12.5, units='in', dpi=1200)
 
 # ggplot(data |> mutate(flux = ifelse(nutrient == 'TP', flux*10, flux),
 #                       intercept = ifelse(nutrient == 'TP', intercept*10, intercept),

@@ -28,6 +28,7 @@ hydrolakes_lagos <- st_read("/Volumes/Seagate Portable Drive/nutri_ret_shps/join
 
 hydrolakes_upstream_sites <- inner_join(upstream_sites_lagos, hydrolakes_lagos, by="lagoslakeid")
 
+rm(hydrolakes_lagos)
 ###--------Nitrogen ---------###
 #Plotting log(N retention/water discharge (y axis, gm2y-1/m3s-1) x Load( N loading/water discharge (x axis, gm2y-1/m3s-1)
 #result => r2=1
@@ -93,9 +94,26 @@ upstream_Pconc_hydro_lt <- merge(upstream_conc_hydro_final, P_loads_lt)%>%
 
 #write.csv(upstream_Pconc_hydro_lt, "data/Pretention_df.csv")
 
-ggplot(upstream_Pconc_hydro_lt, aes(x=res_time_yr, y=Pret_coef)) +
+# Assuming you have your linear regression model stored as lm_model
+lm_model <- lm(log(Pret_coef) ~ log(res_time_yr), data = upstream_Pconc_hydro_lt)
+
+# Extracting p-value from the model
+p_value <- summary(lm_model)$coefficients[2, 4]
+
+# Creating the plot
+ggplot(upstream_Pconc_hydro_lt, aes(x = log(res_time_yr), y = log(Pret_coef))) +
+  geom_point(size = 2, shape = 23) +
+  geom_smooth(method = "lm") +
+  geom_text(aes(label = paste("p-value =", round(p_value, 3))),
+            x = min(log(upstream_Pconc_hydro_lt$res_time_yr)),
+            y = max(log(upstream_Pconc_hydro_lt$Pret_coef)),
+            hjust = 0, vjust = 1) +
+  labs(x = "log(res_time_yr)", y = "log(Pret_coef)")
+
+ggplot(upstream_Pconc_hydro_lt, aes(x=log(res_time_yr), y=log(Pret_coef))) +
   geom_point(size=2, shape=23)+
-  geom_smooth(method=lm)
+  geom_smooth(method=lm)+
+  theme_bw()
 
 
 g2 <- ggplot(upstream_Pconc_hydro_lt, aes(x=total_Pin_ugl, y=Pret_coef)) +

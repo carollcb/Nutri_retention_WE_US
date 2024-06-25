@@ -9,6 +9,7 @@ library(sf)
 library(mapview)
 library(ggmap)
 library(patchwork)
+library(cowplot)
 
 Nretention <- total_Nload %>%
   mutate(TN_removal_gNm2yr =(10^(-0.27 + (0.82 * log(totTNload_gm2yr)))))
@@ -38,14 +39,16 @@ ts_hydro_us <- inner_join(dt1, hydrol_tot, by="Hylak_id")%>%
 #mapview(Nretention, size = 5) + mapview(ts_hydro_us)
 
 Nretention_ts <- merge(Nretention, ts_hydro_us)%>%
+  filter(lagoslakeid!= 457120) %>%
+  distinct(lagoslakeid, water_year, .keep_all = T)%>%
   na.omit()
 
 by(Nretention_ts,factor(Nretention_ts$categorical_ts),summary)
 
 g1 <- ggplot(Nretention_ts, aes(x = categorical_ts, y = log(TN_removal_gNm2yr))) +
     geom_violin(aes(fill = categorical_ts), outlier.shape = NA) +
-    #geom_jitter(aes(color = log(TN_removal_gNm2yr)), height = 0, width = 0.1) +
-  stat_summary(fun.y = median, geom = "point", shape = 20, size = 3, color = "black", position = position_dodge(0.75)) +  # Add median points
+    geom_jitter( height = 0, width = 0.1) +
+  stat_summary(fun.y = median, geom = "point", shape = 20, size = 3, color = "red", position = position_dodge(0.75)) +  # Add median points
   scale_fill_manual(values = c("#009E73", "#56B4E9")) +
     scale_color_gradient(low = "#FEFE62", high = "#D35FB7") +  # Color by log10 Pretention values
   #ggtitle("Distribution of the TN retention values based on TS") +
@@ -71,6 +74,8 @@ Nretention_ts_sp <- Nretention_ts%>%
 
 #Merging with ts data 
 Pretention_ts <- merge(upstream_Pconc_hydro_lt, ts_hydro_us)%>%
+  filter(lagoslakeid!= 457120) %>%
+  distinct(lagoslakeid, water_year, .keep_all = T)%>%
   na.omit()
 
 write.csv(upstream_Pconc_hydro_lt, "data/Pretention_df.csv") #24 sites
@@ -79,8 +84,8 @@ by(Pretention_ts,factor(Pretention_ts$categorical_ts),summary)
 
 g2 <- ggplot(Pretention_ts, aes(x = categorical_ts, y = log(Pret_coef))) +
   geom_violin(aes(fill = categorical_ts), outlier.shape = NA) +
-  #geom_jitter(aes(color = log(Pret_coef)), height = 0, width = 0.1) +
-  stat_summary(fun.y = median, geom = "point", shape = 20, size = 3, color = "black", position = position_dodge(0.75)) +  # Add median points
+  geom_jitter( height = 0, width = 0.1) +
+  stat_summary(fun.y = median, geom = "point", shape = 20, size = 3, color = "red", position = position_dodge(0.75)) +  # Add median points
   scale_fill_manual(values = c("#009E73", "#56B4E9")) +
   scale_color_gradient(low = "#FEFE62", high = "#D35FB7") +  # Color by log10 Pretention values
   #ggtitle("Distribution of the TP retention values based on TS") +
@@ -91,16 +96,22 @@ oligo_lakes <- Pretention_ts %>%
   group_by(lagoslakeid)%>%
 filter(categorical_ts =="oligo")%>%
   add_count() %>%
-  filter(n>=10) #11
-
+  filter(n>=10) %>% #11
+summarize(similar_rows = n())
+  
 eu_lakes <- Pretention_ts %>%
   group_by(lagoslakeid)%>%
   filter(categorical_ts =="eu/mixo")%>%
   add_count() %>%
-  filter(n>=10) #1
+  filter(n>=10) %>%#1
+summarize(similar_rows = n())
 
-g1 + g2
+multi <- plot_grid(g1,g2, ncol=2)
 ggsave("figures/N-P-retention-TS.png", width=8, height=6,units="in", dpi=300)
+
+#bottom <- plot_grid(g1,g2, labels=c('A','B'), ncol=2) #nest plots at the bottom row
+#bottom #view the multi-panel figure
+
 
 ##Saving Final file
 test <- test %>%
