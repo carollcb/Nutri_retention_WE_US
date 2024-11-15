@@ -25,7 +25,7 @@ input_seasonality <- clim_data_sites %>%
             annual = mean(annual)) %>%
   mutate(IS = (1/annual) * sum_paren,
          lagoslakeid = as.character(as.numeric(lagoslakeid))) %>%
-  group_by(lagoslakeid) %>%
+  group_by(lagoslakeid, climate_year) %>%
   summarize(IS=median(IS, na.rm=TRUE))
 
 write.csv(input_seasonality, "data/is.csv")
