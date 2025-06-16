@@ -1,4 +1,5 @@
-###Code to pull over Hydrolakes data [ Res_time (days => Vol_total/Disc_avg), Depth_avg (m)] + Wu et al 2022 and LAGOS_lakeid in oder to calculate nutrient retetion based on Vollenweider 1976 and Harrison et al 2009 eq
+###Code to pull over Hydrolakes data [ Res_time (days => Vol_total/Disc_avg), Depth_avg (m)] + LAGOS_lakeid 
+##Exploring other datasets that we ended up not using in this study.
 source("scripts/99_utils.R")
 source("scripts/LAGOS_EDI.R")
 
