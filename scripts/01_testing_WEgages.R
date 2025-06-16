@@ -1,5 +1,5 @@
 ##Author: Carol Barbosa
-#Don`t need to run that. Lot of messed stuff. I'll clean and organize it later. Already got the upstream gauges info.
+#Grabbing SPARROW data, filtering for WUS lakes and reservoirs and exploring lake associated TP, TN and flow gages
 
 library(raster)
 library(rgdal)
