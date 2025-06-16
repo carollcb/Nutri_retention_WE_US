@@ -130,7 +130,7 @@ plot_TN <- plot_multi_way_importance(importance_frame_tn, x_measure = "mean_min_
                                      no_of_labels =5, main = "Multi-way importance plot for TN retention")
 
 plot_TP <- plot_multi_way_importance(importance_frame_tp, x_measure = "mean_min_depth", y_measure = "no_of_nodes", size_measure = "p_value",
-                                     no_of_labels =5, main = "Multi-way importance plot for TN retention")
+                                     no_of_labels =5, main = "Multi-way importance plot for TP retention")
 multi_plot <- ggarrange(plot_TN, plot_TP, 
                         # labels = c("A", "B"),
                         ncol=2, nrow = 1,
