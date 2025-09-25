@@ -5,21 +5,27 @@ require(caret)
 library(paletteer)
 require(ggplot2)
 
-N_retention_final_3_imputed <- read.csv("data/TNret_final_data_2.csv")
+N_retention_final_3_imputed <- read.csv("data/TNretention_df.csv")
 P_retention_final_3_imputed <- read.csv("data/TPret_final_data_2.csv")
 
 ####TN retention -----------------------
 N_retention_final_4 <- N_retention_final_3_imputed %>%
-  select(-nlcd_barren31_pct, -nlcd_shrub52_pct,-nlcd_past81_pct, -nlcd_openwater11_pct, -nlcd_wetwood90_pct)
+  select(-X) %>%
+  mutate(TN_removal_gNm2yr_log = log(TN_removal_gNm2yr))
 
 set.seed(111)
-train <- N_retention_final_4 %>%
-  group_by(lagoslakeid) %>%
-  sample_frac(.8) %>% #80% of data will be used for training
-  ungroup() 
+lagoslakeid <- unique(N_retention_final_4$lagoslakeid)
+train_lagoslakeid <- sample(lagoslakeid, size = 0.8 * length(lagoslakeid))
+train <- N_retention_final_4 %>% filter(lagoslakeid %in% train_lagoslakeid)
+validate <- N_retention_final_4 %>% filter(!lagoslakeid %in% train_lagoslakeid)
 
-validate <- N_retention_final_4 %>%
-  anti_join(train)
+# train <- N_retention_final_4 %>%
+#   group_by(lagoslakeid) %>%
+#   sample_frac(.8) %>% #80% of data will be used for training
+#   ungroup() 
+# 
+# validate <- N_retention_final_4 %>%
+#   anti_join(train)
 
 set.seed(111)
 rF_tn <- randomForest(TN_removal_gNm2yr_log ~ . -lagoslakeid, data = train, mtry = 17, ntree =500, importance = TRUE)
